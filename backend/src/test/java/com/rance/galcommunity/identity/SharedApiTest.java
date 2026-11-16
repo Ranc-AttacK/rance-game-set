@@ -3,6 +3,7 @@ package com.rance.galcommunity.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,7 +66,8 @@ class SharedApiTest extends IntegrationTestBase {
     void methodNotAllowedIs405Envelope() throws Exception {
         mockMvc.perform(post("/test/probe/business"))
                 .andExpect(status().isMethodNotAllowed())
-                .andExpect(jsonPath("$.code").value(40501));
+                .andExpect(jsonPath("$.code").value(40501))
+                .andExpect(header().exists("Allow"));
     }
 
     @Test
@@ -83,7 +85,8 @@ class SharedApiTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(40001));
+                .andExpect(jsonPath("$.code").value(40001))
+                .andExpect(jsonPath("$.message").value("请求体格式错误"));
     }
 
     @Test
@@ -119,5 +122,26 @@ class SharedApiTest extends IntegrationTestBase {
                 .andReturn();
         String trace = result.getResponse().getHeader("X-Trace-Id");
         assertThat(trace).isNotEqualTo("bad!").isNotBlank();
+    }
+
+    @Test
+    void notAcceptableIs406Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/status406"))
+                .andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.code").value(40601));
+    }
+
+    @Test
+    void conflictIs409Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/status409"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(40901));
+    }
+
+    @Test
+    void unavailableIs503Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/status503"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value(50301));
     }
 }

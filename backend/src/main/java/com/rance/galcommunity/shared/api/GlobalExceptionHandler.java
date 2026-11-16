@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,10 +43,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, Object body, HttpHeaders headers,
             HttpStatusCode statusCode, WebRequest request) {
+        if (statusCode.is5xxServerError()) {
+            log.error("Handled server error traceId={} status={}",
+                    MDC.get("traceId"), statusCode.value(), ex);
+        }
         ErrorCode code = mapStatus(statusCode.value());
-        return ResponseEntity.status(statusCode)
+        return ResponseEntity.status(code.status())
                 .headers(headers)
                 .body(ApiResponse.error(code, messageFor(code)));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        ErrorCode code = ErrorCode.VALIDATION_FAILED;
+        return ResponseEntity.status(code.status())
+                .headers(headers)
+                .body(ApiResponse.error(code, "请求体格式错误"));
     }
 
     @ExceptionHandler(BusinessException.class)
@@ -67,8 +82,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(DataIntegrityViolationException ex) {
-        log.warn("Data integrity violation traceId={} cause={}",
-                MDC.get("traceId"), ex.getMostSpecificCause().getMessage());
+        log.warn("Data integrity violation traceId={} type={}",
+                MDC.get("traceId"), ex.getMostSpecificCause().getClass().getSimpleName());
         ErrorCode code = ErrorCode.CONFLICT;
         return ResponseEntity.status(code.status()).body(ApiResponse.error(code, "数据冲突，请稍后重试"));
     }
@@ -87,9 +102,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case 403 -> ErrorCode.FORBIDDEN;
             case 404 -> ErrorCode.NOT_FOUND;
             case 405 -> ErrorCode.METHOD_NOT_ALLOWED;
+            case 406 -> ErrorCode.NOT_ACCEPTABLE;
+            case 409 -> ErrorCode.CONFLICT;
             case 413 -> ErrorCode.FILE_TOO_LARGE;
             case 415 -> ErrorCode.UNSUPPORTED_MEDIA;
+            case 422 -> ErrorCode.BUSINESS_RULE;
             case 429 -> ErrorCode.RATE_LIMITED;
+            case 503 -> ErrorCode.UNAVAILABLE;
             default -> status >= 500 ? ErrorCode.INTERNAL : ErrorCode.VALIDATION_FAILED;
         };
     }
@@ -101,6 +120,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case FORBIDDEN -> "没有权限";
             case NOT_FOUND -> "资源不存在";
             case METHOD_NOT_ALLOWED -> "请求方法不支持";
+            case NOT_ACCEPTABLE -> "不支持的响应类型";
+            case CONFLICT -> "数据冲突";
+            case BUSINESS_RULE -> "业务规则不满足";
+            case UNAVAILABLE -> "服务暂不可用";
             case FILE_TOO_LARGE -> "文件过大";
             case UNSUPPORTED_MEDIA -> "不支持的媒体类型";
             case RATE_LIMITED -> "请求过于频繁";
