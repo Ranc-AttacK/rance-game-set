@@ -1263,8 +1263,28 @@ class IdentitySchemaIT extends IntegrationTestBase {
         assertThatThrownBy(() -> users.saveAndFlush(second))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void savesAndLoadsEmailOutboxJsonPayload() {
+        EmailOutboxEntry entry = new EmailOutboxEntry();
+        entry.setToEmail("outbox@example.com");
+        entry.setTemplate(EmailTemplate.VERIFY_EMAIL);
+        entry.setPayload(java.util.Map.of("token", "raw-token-123"));
+        entry.setStatus(EmailOutboxStatus.PENDING);
+        entry.setAttempts(0);
+        entry.setNextAttemptAt(Instant.now());
+        outbox.saveAndFlush(entry);
+
+        EmailOutboxEntry loaded = outbox.findById(entry.getId()).orElseThrow();
+        assertThat(loaded.getTemplate()).isEqualTo(EmailTemplate.VERIFY_EMAIL);
+        assertThat(loaded.getStatus()).isEqualTo(EmailOutboxStatus.PENDING);
+        assertThat(loaded.getPayload()).containsEntry("token", "raw-token-123");
+        assertThat(loaded.getCreatedAt()).isNotNull();
+    }
 }
 ```
+
+> 测试类还需注入 `EmailOutboxRepository outbox` 并导入 `EmailOutboxEntry`、`EmailOutboxStatus`、`EmailTemplate`、`Map`；该往返测试验证 `Map ↔ JSON` 映射，Task 9 依赖它。
 
 - [ ] **Step 2: 运行测试确认失败**
 
@@ -1716,11 +1736,11 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update RefreshToken t set t.revokedAt = :now where t.familyId = :familyId and t.revokedAt is null")
     int revokeFamily(@Param("familyId") String familyId, @Param("now") Instant now);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update RefreshToken t set t.revokedAt = :now where t.userId = :userId and t.revokedAt is null")
     int revokeAllForUser(@Param("userId") Long userId, @Param("now") Instant now);
 }
