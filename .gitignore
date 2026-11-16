@@ -1,0 +1,32 @@
+# Brainstorm/diagram artifacts
+.superpowers/
+
+# Java
+target/
+*.class
+*.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# Node / Nuxt
+node_modules/
+dist/
+.nuxt/
+.output/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
