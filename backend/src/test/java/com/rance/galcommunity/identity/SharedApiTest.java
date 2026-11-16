@@ -46,4 +46,78 @@ class SharedApiTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.code").value(50001))
                 .andExpect(jsonPath("$.message").value("服务器内部错误"));
     }
+
+    @Test
+    void typeMismatchIs400Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/typed/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void missingParamIs400Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/param"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void methodNotAllowedIs405Envelope() throws Exception {
+        mockMvc.perform(post("/test/probe/business"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value(40501));
+    }
+
+    @Test
+    void unsupportedMediaIs415Envelope() throws Exception {
+        mockMvc.perform(post("/test/probe/validation")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("x"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value(41501));
+    }
+
+    @Test
+    void malformedJsonIs400Envelope() throws Exception {
+        mockMvc.perform(post("/test/probe/validation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void unknownPathIs404Envelope() throws Exception {
+        mockMvc.perform(get("/test/probe/missing"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401));
+    }
+
+    @Test
+    void validationErrorIncludesFieldData() throws Exception {
+        mockMvc.perform(post("/test/probe/validation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.name").isNotEmpty());
+    }
+
+    @Test
+    void acceptsClientTraceId() throws Exception {
+        var result = mockMvc.perform(get("/test/probe/business")
+                        .header("X-Request-Id", "abcdefgh"))
+                .andReturn();
+        assertThat(result.getResponse().getHeader("X-Trace-Id")).isEqualTo("abcdefgh");
+        String bodyTraceId = JsonPath.read(result.getResponse().getContentAsString(), "$.traceId");
+        assertThat(bodyTraceId).isEqualTo("abcdefgh");
+    }
+
+    @Test
+    void replacesInvalidClientTraceId() throws Exception {
+        var result = mockMvc.perform(get("/test/probe/business")
+                        .header("X-Request-Id", "bad!"))
+                .andReturn();
+        String trace = result.getResponse().getHeader("X-Trace-Id");
+        assertThat(trace).isNotEqualTo("bad!").isNotBlank();
+    }
 }
