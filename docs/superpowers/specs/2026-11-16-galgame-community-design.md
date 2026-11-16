@@ -134,11 +134,11 @@ shared       通用响应/错误/安全/事件契约
 | 数据库 | MySQL 8.0（FULLTEXT ngram） |
 | 缓存/限流 | Redis 7（缓存、Bucket4j 令牌桶） |
 | 对象存储 | MinIO |
-| 邮件 | SMTP；开发环境 MailHog |
+| 邮件 | SMTP；开发环境 Mailpit（MailHog 兼容） |
 | 前端 | Nuxt 3（Vue 3 + Vite + TypeScript + SSR）、Tailwind CSS、Naive UI、Pinia、Axios |
 | 测试 | JUnit 5 + Mockito + Spring Modulith Test + Testcontainers（MySQL/Redis/MinIO）；Vitest；Playwright；k6 |
 | 文档 | springdoc-openapi |
-| 部署 | Docker Compose（app + web + MySQL + Redis + MinIO + MailHog(dev)） |
+| 部署 | Docker Compose（app + web + MySQL + Redis + MinIO + Mailpit(dev)） |
 
 ### 3.4 部署拓扑与端口
 
@@ -149,7 +149,7 @@ shared       通用响应/错误/安全/事件契约
 | MySQL | 3306 | 单库 `gal` |
 | Redis | 6379 | 缓存/限流 |
 | MinIO | 9000 / 9001 | API / 控制台 |
-| MailHog | 1025 / 8025 | 仅开发 profile |
+| Mailpit（MailHog 兼容） | 1025 / 8025 | 仅开发 profile |
 | Prometheus / Grafana | 9090 / 3001 | 可选 profile |
 
 生产由 Nginx 终止 TLS、托管静态资源、反代 Nuxt 与 `/api`。
@@ -499,7 +499,7 @@ shared       通用响应/错误/安全/事件契约
 - 生产使用托管邮件服务（阿里云 DirectMail / AWS SES 等），独立发信子域名（如 `mail.example.com`）
 - 发信域名完成 **SPF / DKIM / DMARC** 配置并通过校验；设置退信与投诉回调处理
 - 验证/找回邮件写入 `user_email_outbox`，定时发送 + 指数退避重试（最多 5 次），失败告警
-- 开发环境用 MailHog；上线前在 Gmail / QQ / 163 做送达测试
+- 开发环境用 Mailpit（MailHog 兼容，1025/8025）；上线前在 Gmail / QQ / 163 做送达测试
 - 单账号发信频率限制，防止被当成垃圾邮件源
 
 ## 9. 测试与验证
@@ -591,7 +591,7 @@ shared       通用响应/错误/安全/事件契约
 
 ## 12. 验收标准（Definition of Done）
 
-- `docker compose up` 一键启动 app/MySQL/Redis/MinIO/web/MailHog(dev)，健康检查全绿
+- `docker compose up` 一键启动 app/MySQL/Redis/MinIO/web/Mailpit(dev)，健康检查全绿
 - `ApplicationModules.verify()` 通过，无模块环依赖
 - 第 9.2 节 8 条 E2E 黄金路径全部通过
 - 后端整体覆盖率 ≥80%，核心域 ≥85%；前端核心 ≥80%

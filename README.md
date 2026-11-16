@@ -14,9 +14,11 @@ docker compose up -d
 mvn -f backend/pom.xml spring-boot:run
 ```
 
+停止服务：`docker compose down`；清空数据卷：`docker compose down -v`。
+
 - API: http://localhost:8080/api/v1
 - Swagger: http://localhost:8080/swagger-ui.html
-- Mailpit（MailHog 兼容）: http://localhost:8025
+- Mailpit（MailHog 兼容）: http://localhost:8025（SMTP: localhost:1025）
 - MinIO Console: http://localhost:9001（minioadmin/minioadmin）
 
 ## 测试

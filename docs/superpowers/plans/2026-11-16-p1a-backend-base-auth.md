@@ -4,9 +4,9 @@
 
 **Goal:** 建成可运行的 Spring Boot 模块化单体基座，完成注册、邮箱验证、登录、刷新、找回密码、资料与注销的完整闭环。
 
-**Architecture:** 单个 Spring Boot 3.3 应用，`shared` 为开放基础模块，`identity` 为第一个业务模块；Spring Modulith 校验模块边界；Spring Security + RS256 JWT（access 内存态、refresh httpOnly Cookie）；MySQL 存用户与令牌，Redis 限流，MailHog 承接开发邮件。
+**Architecture:** 单个 Spring Boot 3.3 应用，`shared` 为开放基础模块，`identity` 为第一个业务模块；Spring Modulith 校验模块边界；Spring Security + RS256 JWT（access 内存态、refresh httpOnly Cookie）；MySQL 存用户与令牌，Redis 限流，Mailpit（MailHog 兼容）承接开发邮件。
 
-**Tech Stack:** Java 21、Spring Boot 3.3.6、Spring Modulith 1.2.6、Spring Data JPA、Flyway、Spring Security OAuth2 Resource Server、MySQL 8、Redis 7、MailHog、Testcontainers、ArchUnit、springdoc-openapi。
+**Tech Stack:** Java 21、Spring Boot 3.3.6、Spring Modulith 1.2.6、Spring Data JPA、Flyway、Spring Security OAuth2 Resource Server、MySQL 8、Redis 7、Mailpit（MailHog 兼容）、Testcontainers、ArchUnit、springdoc-openapi。
 
 > 本计划只覆盖 **P1-A 后端**。P1-B（Nuxt 前端认证页面与 E2E）在 backend 全绿后另写一份计划。
 
@@ -545,9 +545,11 @@ services:
     volumes:
       - minio-data:/data
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: gal-mailhog
+  # Mailpit is a MailHog-compatible dev SMTP sink (same 1025/8025 ports).
+  # It replaces MailHog because the MailHog image pull stalls on the available registry mirror.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: gal-mailpit
     ports:
       - "1025:1025"
       - "8025:8025"
@@ -572,7 +574,7 @@ Run:
 docker compose up -d
 docker compose ps
 ```
-Expected: mysql/redis/minio 显示 `healthy`（或运行中）；mailhog 运行中
+Expected: mysql/redis/minio 显示 `healthy`（或运行中）；mailpit 运行中
 
 - [ ] **Step 4: 写 README 开发说明**
 
@@ -596,7 +598,7 @@ mvn -f backend/pom.xml spring-boot:run
 
 - API: http://localhost:8080/api/v1
 - Swagger: http://localhost:8080/swagger-ui.html
-- MailHog: http://localhost:8025
+- Mailpit（MailHog 兼容）: http://localhost:8025
 - MinIO Console: http://localhost:9001（minioadmin/minioadmin）
 
 ## 测试
@@ -2753,7 +2755,7 @@ git commit -m "feat(identity): implement registration with verification email ou
 
 ---
 
-### Task 9: 邮件投递器与 MailHog
+### Task 9: 邮件投递器与 Mailpit（MailHog 兼容）
 
 **Files:**
 - Create: `backend/src/main/java/com/rance/galcommunity/identity/mail/EmailSender.java`
@@ -4625,15 +4627,15 @@ jobs:
 ## 认证接口速查
 
 ```bash
-# 注册（返回 201，并写入 MailHog 验证邮件）
+# 注册（返回 201，并写入 Mailpit 验证邮件）
 curl -s -X POST http://localhost:8080/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"player@example.com","nickname":"Player","password":"secret123"}'
 
-# 从 MailHog (http://localhost:8025) 复制 token，然后：
+# 从 Mailpit (http://localhost:8025) 复制 token，然后：
 curl -s -X POST http://localhost:8080/api/v1/auth/verify-email \
   -H 'Content-Type: application/json' \
-  -d '{"token":"<mailhog-token>"}'
+  -d '{"token":"<mailpit-token>"}'
 
 # 登录（响应含 accessToken，Set-Cookie 含 refresh_token）
 curl -s -c cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
