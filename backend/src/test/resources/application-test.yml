@@ -1,0 +1,28 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  mail:
+    host: localhost
+    port: 1025
+
+app:
+  base-url: http://localhost:5173
+  allowed-origins:
+    - http://localhost:5173
+  jwt:
+    private-key: ""
+    public-key: ""
+    issuer: gal-community
+    access-ttl: PT30M
+    refresh-ttl: P7D
+  cookie:
+    secure: false
+  email:
+    dispatch-enabled: false
+    poll-interval-ms: 5000
+
+management:
+  health:
+    mail:
+      enabled: false
