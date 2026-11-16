@@ -11,8 +11,10 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "com.rance.galcommunity", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureRulesTest {
 
+    // Cross-module boundaries (including direct repository access) are enforced by
+    // ApplicationModules.verify() in ModuleStructureTest.
     @ArchTest
-    static final ArchRule controllersDoNotTouchRepositories =
+    static final ArchRule webLayerDoesNotDependOnPersistence =
             noClasses().that().resideInAPackage("..web..")
                     .should().dependOnClassesThat().resideInAPackage("..repo..");
 
