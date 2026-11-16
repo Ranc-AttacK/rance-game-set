@@ -1847,15 +1847,27 @@ git commit -m "feat(identity): add identity schema, entities and repositories"
 ```java
 package com.rance.galcommunity.architecture;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.rance.galcommunity.GalCommunityApplication;
 import org.junit.jupiter.api.Test;
+import org.springframework.modulith.core.ApplicationModule;
 import org.springframework.modulith.core.ApplicationModules;
 
 class ModuleStructureTest {
 
+    private static final ApplicationModules MODULES =
+            ApplicationModules.of(GalCommunityApplication.class);
+
+    @Test
+    void detectsExpectedModules() {
+        assertThat(MODULES.stream().map(ApplicationModule::getName))
+                .containsExactlyInAnyOrder("shared", "identity");
+    }
+
     @Test
     void moduleBoundariesAreValid() {
-        ApplicationModules.of(GalCommunityApplication.class).verify();
+        MODULES.verify();
     }
 }
 ```
@@ -1875,8 +1887,10 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(packages = "com.rance.galcommunity", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureRulesTest {
 
+    // Cross-module boundaries (including direct repository access) are enforced by
+    // ApplicationModules.verify() in ModuleStructureTest.
     @ArchTest
-    static final ArchRule controllersDoNotTouchRepositories =
+    static final ArchRule webLayerDoesNotDependOnPersistence =
             noClasses().that().resideInAPackage("..web..")
                     .should().dependOnClassesThat().resideInAPackage("..repo..");
 
@@ -4421,6 +4435,7 @@ git commit -m "feat(identity): add profile update and account deletion"
 ### Task 15: 供其他模块使用的用户摘要 API
 
 **Files:**
+- Create: `backend/src/main/java/com/rance/galcommunity/identity/api/package-info.java`
 - Create: `backend/src/main/java/com/rance/galcommunity/identity/api/IdentityApi.java`
 - Create: `backend/src/main/java/com/rance/galcommunity/identity/api/UserSummary.java`
 - Modify: `backend/src/main/java/com/rance/galcommunity/identity/service/UserService.java`
@@ -4511,6 +4526,16 @@ public interface IdentityApi {
     Map<Long, UserSummary> findUsers(Collection<Long> ids);
 }
 ```
+
+`backend/src/main/java/com/rance/galcommunity/identity/api/package-info.java`
+```java
+@NamedInterface("api")
+package com.rance.galcommunity.identity.api;
+
+import org.springframework.modulith.NamedInterface;
+```
+
+> 当 catalog/community 等模块消费该 API 时，它们的 `allowedDependencies` 应写 `"identity :: api"`，而不是整个 `identity`，避免访问 repo/domain。
 
 让 `UserService` 实现该接口：
 ```java
