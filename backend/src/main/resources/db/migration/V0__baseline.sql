@@ -9,5 +9,6 @@ CREATE TABLE event_publication (
     event_type       VARCHAR(255),
     listener_id      VARCHAR(255),
     serialized_event VARCHAR(255),
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    KEY idx_event_publication_completion_date (completion_date)
 ) ENGINE = InnoDB;

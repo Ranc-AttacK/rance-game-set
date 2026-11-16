@@ -43,4 +43,33 @@ public abstract class IntegrationTestBase {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    protected org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    @org.junit.jupiter.api.BeforeEach
+    void resetState() {
+        redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
+            connection.serverCommands().flushDb();
+            return null;
+        });
+        // Later tasks add these tables; the per-statement try/catch keeps Task 1 green before they exist.
+        truncate("event_publication");
+        truncate("user_email_outbox");
+        truncate("user_password_resets");
+        truncate("user_email_verifications");
+        truncate("user_refresh_tokens");
+        truncate("user_accounts");
+    }
+
+    private void truncate(String table) {
+        try {
+            jdbcTemplate.execute("TRUNCATE TABLE " + table);
+        } catch (Exception ignored) {
+            // Table not present yet in this task's schema.
+        }
+    }
 }

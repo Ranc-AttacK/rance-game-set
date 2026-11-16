@@ -2,7 +2,7 @@ spring:
   application:
     name: gal-community
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:gal}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+    url: ${DB_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:gal}?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${DB_USER:gal}
     password: ${DB_PASSWORD:galpass}
   jpa:
@@ -26,11 +26,7 @@ spring:
       mail:
         smtp:
           auth: false
-  modulith:
-    events:
-      jdbc:
-        schema-initialization:
-          enabled: true
+  # event_publication is owned by Flyway (V0); the Modulith JPA starter validates it and does not auto-create it.
 
 server:
   port: 8080
