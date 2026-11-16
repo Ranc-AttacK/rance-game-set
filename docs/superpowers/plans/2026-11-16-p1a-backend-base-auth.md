@@ -989,11 +989,15 @@ import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 class RateLimitIT extends IntegrationTestBase {
 
     @Autowired
     RateLimitService rateLimitService;
+
+    @Autowired
+    StringRedisTemplate redisTemplate;
 
     @Test
     void allowsUpToLimitThenBlocks() {
@@ -1001,6 +1005,7 @@ class RateLimitIT extends IntegrationTestBase {
         assertThat(rateLimitService.tryAcquire(key, 2, Duration.ofMinutes(1))).isTrue();
         assertThat(rateLimitService.tryAcquire(key, 2, Duration.ofMinutes(1))).isTrue();
         assertThat(rateLimitService.tryAcquire(key, 2, Duration.ofMinutes(1))).isFalse();
+        assertThat(redisTemplate.getExpire(key)).isGreaterThan(0);
     }
 
     @Test
@@ -1011,11 +1016,14 @@ class RateLimitIT extends IntegrationTestBase {
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> PasswordPolicy.validate("12345678"))
                 .isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> PasswordPolicy.validate("密".repeat(30) + "1"))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test
     void passwordPolicyAcceptsLettersAndDigits() {
         PasswordPolicy.validate("secret123");
+        PasswordPolicy.validate("密码12345678");
     }
 
     @Test
@@ -1050,13 +1058,20 @@ public final class PasswordPolicy {
     }
 
     public static void validate(String rawPassword) {
-        if (rawPassword == null
-                || rawPassword.length() < 8
-                || rawPassword.length() > 72
-                || !rawPassword.matches(".*[A-Za-z].*")
-                || !rawPassword.matches(".*\\d.*")) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED, "密码需 8-72 位且同时包含字母和数字");
+        if (rawPassword == null) {
+            throw invalid();
         }
+        int byteLength = rawPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+        boolean hasLetter = rawPassword.chars().anyMatch(Character::isLetter);
+        boolean hasDigit = rawPassword.chars().anyMatch(Character::isDigit);
+        // BCrypt only considers the first 72 bytes, so enforce the limit in bytes.
+        if (rawPassword.length() < 8 || byteLength > 72 || !hasLetter || !hasDigit) {
+            throw invalid();
+        }
+    }
+
+    private static BusinessException invalid() {
+        return new BusinessException(ErrorCode.VALIDATION_FAILED, "密码需 8-72 位且同时包含字母和数字");
     }
 }
 ```
@@ -1070,6 +1085,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Objects;
 
 public final class Hashing {
 
@@ -1079,6 +1095,7 @@ public final class Hashing {
     }
 
     public static String sha256(String value) {
+        Objects.requireNonNull(value, "value");
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
@@ -1099,12 +1116,30 @@ public final class Hashing {
 ```java
 package com.rance.galcommunity.shared.ratelimit;
 
+import com.rance.galcommunity.shared.api.BusinessException;
+import com.rance.galcommunity.shared.api.ErrorCode;
 import java.time.Duration;
+import java.util.List;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
+/**
+ * Fixed-window rate limiter. INCR + PEXPIRE are atomic via one Lua script.
+ * Fail-closed: if Redis is unavailable, throws BusinessException(UNAVAILABLE)
+ * so auth flows return 503 instead of silently disabling brute-force protection.
+ */
 @Service
 public class RateLimitService {
+
+    private static final DefaultRedisScript<Long> SCRIPT = new DefaultRedisScript<>("""
+            local count = redis.call('INCR', KEYS[1])
+            if count == 1 then
+              redis.call('PEXPIRE', KEYS[1], ARGV[1])
+            end
+            return count
+            """, Long.class);
 
     private final StringRedisTemplate redis;
 
@@ -1113,11 +1148,18 @@ public class RateLimitService {
     }
 
     public boolean tryAcquire(String key, int limit, Duration window) {
-        Long count = redis.opsForValue().increment(key);
-        if (count != null && count == 1L) {
-            redis.expire(key, window);
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("key is required");
         }
-        return count != null && count <= limit;
+        if (limit <= 0 || window == null || window.isZero() || window.isNegative()) {
+            throw new IllegalArgumentException("limit and window must be positive");
+        }
+        try {
+            Long count = redis.execute(SCRIPT, List.of(key), String.valueOf(window.toMillis()));
+            return count != null && count <= limit;
+        } catch (DataAccessException ex) {
+            throw new BusinessException(ErrorCode.UNAVAILABLE, "限流服务暂不可用");
+        }
     }
 }
 ```
