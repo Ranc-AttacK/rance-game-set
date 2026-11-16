@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Objects;
 
 public final class Hashing {
 
@@ -14,6 +15,7 @@ public final class Hashing {
     }
 
     public static String sha256(String value) {
+        Objects.requireNonNull(value, "value");
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
