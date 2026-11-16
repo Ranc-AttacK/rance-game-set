@@ -1298,7 +1298,7 @@ CREATE TABLE user_refresh_tokens (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
     family_id VARCHAR(36) NOT NULL,
-    token_hash CHAR(64) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
     expires_at DATETIME(6) NOT NULL,
     revoked_at DATETIME(6) NULL,
     replaced_by BIGINT NULL,
@@ -1311,7 +1311,7 @@ CREATE TABLE user_refresh_tokens (
 CREATE TABLE user_email_verifications (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    token_hash CHAR(64) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
     expires_at DATETIME(6) NOT NULL,
     used_at DATETIME(6) NULL,
     PRIMARY KEY (id),
@@ -1322,7 +1322,7 @@ CREATE TABLE user_email_verifications (
 CREATE TABLE user_password_resets (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
-    token_hash CHAR(64) NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
     expires_at DATETIME(6) NOT NULL,
     used_at DATETIME(6) NULL,
     PRIMARY KEY (id),
@@ -1343,6 +1343,8 @@ CREATE TABLE user_email_outbox (
     KEY idx_email_outbox_due (status, next_attempt_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
+
+> `token_hash` 使用 `VARCHAR(64)` 以匹配实体 `@Column(length = 64)` 的 JDBC 类型；`CHAR(64)` 会被 Hibernate `ddl-auto=validate` 判为类型不匹配。
 
 - [ ] **Step 4: 写实体、枚举与仓储**
 
