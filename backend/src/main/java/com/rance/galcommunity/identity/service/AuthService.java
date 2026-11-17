@@ -149,7 +149,7 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(String email, String ip) {
-        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        String normalized = email.trim().toLowerCase(java.util.Locale.ROOT);
         if (!rateLimit.tryAcquire("rl:forgot:ip:" + ip, 20, Duration.ofHours(1))) {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁");
         }
@@ -157,7 +157,13 @@ public class AuthService {
                 5, Duration.ofHours(1))) {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁");
         }
+        if (!rateLimit.tryAcquire("rl:forgot:user:" + Hashing.sha256(normalized),
+                5, Duration.ofHours(1))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁");
+        }
         users.findByEmail(normalized)
+                .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
+                .flatMap(user -> users.findByIdForUpdate(user.getId()))
                 .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
                 .ifPresent(user -> {
                     resets.expireActive(user.getId(), Instant.now());
@@ -175,16 +181,19 @@ public class AuthService {
     @Transactional
     public void resetPassword(String rawToken, String newPassword) {
         PasswordPolicy.validate(newPassword);
-        PasswordReset reset = resets.findByTokenHashForUpdate(Hashing.sha256(rawToken))
+        Long userId = resets.findUserIdByTokenHash(Hashing.sha256(rawToken))
                 .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接无效"));
+        UserAccount user = users.findByIdForUpdate(userId)
+                .filter(candidateUser -> candidateUser.getStatus() == AccountStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效"));
+        PasswordReset reset = resets.findByTokenHashForUpdate(Hashing.sha256(rawToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效"));
         if (reset.getUsedAt() != null || reset.getExpiresAt().isBefore(Instant.now())) {
             throw new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效");
         }
-        UserAccount user = users.findById(reset.getUserId())
-                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效"));
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         reset.setUsedAt(Instant.now());
+        resets.expireActive(user.getId(), Instant.now());
         refreshTokenService.revokeAllForUser(user.getId());
     }
 

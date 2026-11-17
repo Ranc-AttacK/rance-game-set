@@ -14,6 +14,9 @@ public interface PasswordResetRepository extends JpaRepository<PasswordReset, Lo
 
     Optional<PasswordReset> findByTokenHash(String tokenHash);
 
+    @Query("select r.userId from PasswordReset r where r.tokenHash = :tokenHash")
+    Optional<Long> findUserIdByTokenHash(@Param("tokenHash") String tokenHash);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from PasswordReset r where r.tokenHash = :tokenHash")
     Optional<PasswordReset> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
