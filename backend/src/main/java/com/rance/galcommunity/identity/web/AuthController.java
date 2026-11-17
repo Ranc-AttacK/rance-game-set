@@ -3,9 +3,11 @@ package com.rance.galcommunity.identity.web;
 import com.rance.galcommunity.identity.security.OriginGuard;
 import com.rance.galcommunity.identity.security.RefreshCookie;
 import com.rance.galcommunity.identity.service.AuthService;
+import com.rance.galcommunity.identity.web.dto.ForgotPasswordRequest;
 import com.rance.galcommunity.identity.web.dto.LoginRequest;
 import com.rance.galcommunity.identity.web.dto.LoginResponse;
 import com.rance.galcommunity.identity.web.dto.RegisterRequest;
+import com.rance.galcommunity.identity.web.dto.ResetPasswordRequest;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.identity.web.dto.VerifyEmailRequest;
 import com.rance.galcommunity.shared.api.ApiResponse;
@@ -92,6 +94,19 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public ApiResponse<Void> resendVerification(@AuthenticationPrincipal Jwt jwt) {
         authService.resendVerification(Long.parseLong(jwt.getSubject()));
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+                                            HttpServletRequest httpRequest) {
+        authService.forgotPassword(request.email(), ClientIp.of(httpRequest));
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
         return ApiResponse.ok();
     }
 }

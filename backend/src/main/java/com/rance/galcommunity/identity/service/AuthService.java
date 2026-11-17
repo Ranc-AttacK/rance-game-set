@@ -3,9 +3,11 @@ package com.rance.galcommunity.identity.service;
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.EmailTemplate;
 import com.rance.galcommunity.identity.domain.EmailVerification;
+import com.rance.galcommunity.identity.domain.PasswordReset;
 import com.rance.galcommunity.identity.domain.Role;
 import com.rance.galcommunity.identity.domain.UserAccount;
 import com.rance.galcommunity.identity.repo.EmailVerificationRepository;
+import com.rance.galcommunity.identity.repo.PasswordResetRepository;
 import com.rance.galcommunity.identity.repo.UserAccountRepository;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.shared.api.BusinessException;
@@ -27,6 +29,7 @@ public class AuthService {
 
     private final UserAccountRepository users;
     private final EmailVerificationRepository verifications;
+    private final PasswordResetRepository resets;
     private final EmailOutboxService emailOutbox;
     private final PasswordEncoder passwordEncoder;
     private final RateLimitService rateLimit;
@@ -36,6 +39,7 @@ public class AuthService {
 
     public AuthService(UserAccountRepository users,
                        EmailVerificationRepository verifications,
+                       PasswordResetRepository resets,
                        EmailOutboxService emailOutbox,
                        PasswordEncoder passwordEncoder,
                        RateLimitService rateLimit,
@@ -43,6 +47,7 @@ public class AuthService {
                        TokenService tokenService) {
         this.users = users;
         this.verifications = verifications;
+        this.resets = resets;
         this.emailOutbox = emailOutbox;
         this.passwordEncoder = passwordEncoder;
         this.rateLimit = rateLimit;
@@ -140,6 +145,47 @@ public class AuthService {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "重发过于频繁");
         }
         issueVerification(user);
+    }
+
+    @Transactional
+    public void forgotPassword(String email, String ip) {
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        if (!rateLimit.tryAcquire("rl:forgot:ip:" + ip, 20, Duration.ofHours(1))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁");
+        }
+        if (!rateLimit.tryAcquire("rl:forgot:" + ip + ":" + Hashing.sha256(normalized),
+                5, Duration.ofHours(1))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "请求过于频繁");
+        }
+        users.findByEmail(normalized)
+                .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
+                .ifPresent(user -> {
+                    resets.expireActive(user.getId(), Instant.now());
+                    String rawToken = Hashing.randomToken();
+                    PasswordReset reset = new PasswordReset();
+                    reset.setUserId(user.getId());
+                    reset.setTokenHash(Hashing.sha256(rawToken));
+                    reset.setExpiresAt(Instant.now().plus(Duration.ofHours(1)));
+                    resets.save(reset);
+                    emailOutbox.enqueue(user.getEmail(), EmailTemplate.RESET_PASSWORD,
+                            Map.of("token", rawToken));
+                });
+    }
+
+    @Transactional
+    public void resetPassword(String rawToken, String newPassword) {
+        PasswordPolicy.validate(newPassword);
+        PasswordReset reset = resets.findByTokenHashForUpdate(Hashing.sha256(rawToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接无效"));
+        if (reset.getUsedAt() != null || reset.getExpiresAt().isBefore(Instant.now())) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效");
+        }
+        UserAccount user = users.findById(reset.getUserId())
+                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "重置链接已失效"));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        reset.setUsedAt(Instant.now());
+        refreshTokenService.revokeAllForUser(user.getId());
     }
 
     public record LoginResult(TokenService.IssuedToken access, String refreshToken,
