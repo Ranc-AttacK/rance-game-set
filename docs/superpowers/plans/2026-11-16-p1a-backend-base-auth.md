@@ -4627,6 +4627,8 @@ public class UserService implements com.rance.galcommunity.identity.api.Identity
 
 > 说明：批量查询就绪；Redis 缓存等消费方（P4 社区动态流）接入时再加，避免过早优化。
 
+> 实加固：`findUsers` 返回 `Map.copyOf` 不可变；空/缺失/重复/已删除 id 行为有测试；接口 Javadoc 明确 ACTIVE-only；全量 85。
+
 - [ ] **Step 4: 运行测试确认通过**
 
 Run:
