@@ -6,13 +6,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rance.galcommunity.IntegrationTestBase;
+import com.rance.galcommunity.identity.domain.AccountStatus;
+import com.rance.galcommunity.identity.repo.RefreshTokenRepository;
+import com.rance.galcommunity.identity.repo.UserAccountRepository;
+import com.rance.galcommunity.identity.service.AuthService;
+import com.rance.galcommunity.shared.api.BusinessException;
+import com.rance.galcommunity.shared.util.Hashing;
 import jakarta.servlet.http.Cookie;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 class RefreshIT extends IntegrationTestBase {
+
+    @Autowired
+    RefreshTokenRepository refreshTokens;
+
+    @Autowired
+    UserAccountRepository users;
+
+    @Autowired
+    AuthService authService;
 
     private Cookie login(String email) throws Exception {
         registerAndGetVerificationToken(email, "Refresh", "secret123");
@@ -82,5 +105,76 @@ class RefreshIT extends IntegrationTestBase {
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(cookie).header("Origin", "http://evil.example"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void refreshWithoutCookieIsRejected() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .header("Origin", "http://localhost:5173"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40103));
+    }
+
+    @Test
+    void expiredRefreshIsRejected() throws Exception {
+        Cookie cookie = login("refresh5@example.com");
+        var token = refreshTokens.findByTokenHash(Hashing.sha256(cookie.getValue())).orElseThrow();
+        token.setExpiresAt(Instant.now().minusSeconds(60));
+        refreshTokens.saveAndFlush(token);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(cookie).header("Origin", "http://localhost:5173"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40103));
+    }
+
+    @Test
+    void bannedUserRefreshIsRejectedAndFamilyRevoked() throws Exception {
+        Cookie cookie = login("refresh6@example.com");
+        var user = users.findByEmail("refresh6@example.com").orElseThrow();
+        user.setStatus(AccountStatus.BANNED);
+        users.saveAndFlush(user);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(cookie).header("Origin", "http://localhost:5173"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40103));
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(cookie).header("Origin", "http://localhost:5173"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40103));
+    }
+
+    @Test
+    void concurrentRefreshWithSameTokenAllowsOnlyOne() throws Exception {
+        Cookie cookie = login("refresh7@example.com");
+        String raw = cookie.getValue();
+        AtomicReference<String> successRaw = new AtomicReference<>();
+
+        Callable<Boolean> task = () -> {
+            try {
+                AuthService.LoginResult result = authService.refresh(raw);
+                successRaw.set(result.refreshToken());
+                return true;
+            } catch (BusinessException ex) {
+                return false;
+            }
+        };
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<Boolean> first = pool.submit(task);
+            Future<Boolean> second = pool.submit(task);
+            List<Boolean> results = List.of(first.get(), second.get());
+            assertThat(results).containsExactlyInAnyOrder(true, false);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(successRaw.get()).isNotBlank();
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> authService.refresh(successRaw.get()))
+                .isInstanceOf(BusinessException.class);
     }
 }

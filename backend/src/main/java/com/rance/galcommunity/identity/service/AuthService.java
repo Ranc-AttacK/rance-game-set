@@ -3,13 +3,10 @@ package com.rance.galcommunity.identity.service;
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.EmailTemplate;
 import com.rance.galcommunity.identity.domain.EmailVerification;
-import com.rance.galcommunity.identity.domain.RefreshToken;
 import com.rance.galcommunity.identity.domain.Role;
 import com.rance.galcommunity.identity.domain.UserAccount;
 import com.rance.galcommunity.identity.repo.EmailVerificationRepository;
-import com.rance.galcommunity.identity.repo.RefreshTokenRepository;
 import com.rance.galcommunity.identity.repo.UserAccountRepository;
-import com.rance.galcommunity.identity.security.AppProperties;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.shared.api.BusinessException;
 import com.rance.galcommunity.shared.api.ErrorCode;
@@ -33,9 +30,8 @@ public class AuthService {
     private final EmailOutboxService emailOutbox;
     private final PasswordEncoder passwordEncoder;
     private final RateLimitService rateLimit;
-    private final RefreshTokenRepository refreshTokens;
+    private final RefreshTokenService refreshTokenService;
     private final TokenService tokenService;
-    private final AppProperties props;
     private final String dummyPasswordHash;
 
     public AuthService(UserAccountRepository users,
@@ -43,17 +39,15 @@ public class AuthService {
                        EmailOutboxService emailOutbox,
                        PasswordEncoder passwordEncoder,
                        RateLimitService rateLimit,
-                       RefreshTokenRepository refreshTokens,
-                       TokenService tokenService,
-                       AppProperties props) {
+                       RefreshTokenService refreshTokenService,
+                       TokenService tokenService) {
         this.users = users;
         this.verifications = verifications;
         this.emailOutbox = emailOutbox;
         this.passwordEncoder = passwordEncoder;
         this.rateLimit = rateLimit;
-        this.refreshTokens = refreshTokens;
+        this.refreshTokenService = refreshTokenService;
         this.tokenService = tokenService;
-        this.props = props;
         this.dummyPasswordHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
 
@@ -106,45 +100,19 @@ public class AuthService {
         }
 
         TokenService.IssuedToken access = tokenService.issue(user);
-        String refreshToken = createRefreshToken(user, java.util.UUID.randomUUID().toString());
+        String refreshToken = refreshTokenService.issue(user,
+                java.util.UUID.randomUUID().toString()).rawToken();
         return new LoginResult(access, refreshToken, UserProfileResponse.self(user));
     }
 
-    @Transactional(noRollbackFor = BusinessException.class)
     public LoginResult refresh(String rawRefreshToken) {
-        RefreshToken token = refreshTokens
-                .findByTokenHash(Hashing.sha256(rawRefreshToken))
-                .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录"));
-
-        if (token.getRevokedAt() != null || token.getReplacedBy() != null) {
-            refreshTokens.revokeFamily(token.getFamilyId(), Instant.now());
-            throw new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录");
-        }
-        if (token.getExpiresAt().isBefore(Instant.now())) {
-            throw new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录");
-        }
-
-        UserAccount user = users.findById(token.getUserId())
-                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录"));
-
-        String newRaw = createRefreshToken(user, token.getFamilyId());
-        RefreshToken newToken = refreshTokens
-                .findByTokenHash(Hashing.sha256(newRaw)).orElseThrow();
-        token.setRevokedAt(Instant.now());
-        token.setReplacedBy(newToken.getId());
-
-        TokenService.IssuedToken access = tokenService.issue(user);
-        return new LoginResult(access, newRaw, UserProfileResponse.self(user));
+        RefreshTokenService.RotatedToken rotated = refreshTokenService.rotate(rawRefreshToken);
+        TokenService.IssuedToken access = tokenService.issue(rotated.user());
+        return new LoginResult(access, rotated.rawToken(), UserProfileResponse.self(rotated.user()));
     }
 
-    @Transactional
     public void logout(String rawRefreshToken) {
-        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
-            return;
-        }
-        refreshTokens.findByTokenHash(Hashing.sha256(rawRefreshToken))
-                .ifPresent(token -> refreshTokens.revokeFamily(token.getFamilyId(), Instant.now()));
+        refreshTokenService.logout(rawRefreshToken);
     }
 
     @Transactional
@@ -172,17 +140,6 @@ public class AuthService {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "重发过于频繁");
         }
         issueVerification(user);
-    }
-
-    private String createRefreshToken(UserAccount user, String familyId) {
-        String raw = Hashing.randomToken();
-        RefreshToken token = new RefreshToken();
-        token.setUserId(user.getId());
-        token.setFamilyId(familyId);
-        token.setTokenHash(Hashing.sha256(raw));
-        token.setExpiresAt(Instant.now().plus(props.jwt().refreshTtl()));
-        refreshTokens.save(token);
-        return raw;
     }
 
     public record LoginResult(TokenService.IssuedToken access, String refreshToken,
