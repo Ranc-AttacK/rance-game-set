@@ -50,6 +50,12 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    protected com.rance.galcommunity.identity.mail.EmailSender emailSender;
+
+    @Autowired
+    protected com.rance.galcommunity.identity.service.EmailOutboxProcessor emailOutboxProcessor;
+
     @org.junit.jupiter.api.BeforeEach
     void resetState() {
         redisTemplate.execute((org.springframework.data.redis.core.RedisCallback<Object>) connection -> {
@@ -71,5 +77,28 @@ public abstract class IntegrationTestBase {
         } catch (Exception ignored) {
             // Table not present yet in this task's schema.
         }
+    }
+
+    protected String registerAndGetVerificationToken(String email, String nickname, String password)
+            throws Exception {
+        org.mockito.Mockito.clearInvocations(emailSender);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/auth/register")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "email", email, "nickname", nickname, "password", password))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .status().isCreated());
+
+        emailOutboxProcessor.processDue(java.time.Instant.now());
+
+        org.mockito.ArgumentCaptor<String> body = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(emailSender, org.mockito.Mockito.atLeastOnce())
+                .send(org.mockito.ArgumentMatchers.eq(email),
+                        org.mockito.ArgumentMatchers.anyString(), body.capture());
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("token=([A-Za-z0-9_-]+)").matcher(body.getValue());
+        org.assertj.core.api.Assertions.assertThat(matcher.find()).isTrue();
+        return matcher.group(1);
     }
 }

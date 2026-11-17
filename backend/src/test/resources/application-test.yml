@@ -21,6 +21,7 @@ app:
   email:
     dispatch-enabled: false
     poll-interval-ms: 5000
+    from: no-reply@gal.local
 
 management:
   health:

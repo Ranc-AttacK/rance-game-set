@@ -19,6 +19,6 @@ public record AppProperties(
     public record Cookie(boolean secure) {
     }
 
-    public record Email(boolean dispatchEnabled, long pollIntervalMs) {
+    public record Email(boolean dispatchEnabled, long pollIntervalMs, String from) {
     }
 }
