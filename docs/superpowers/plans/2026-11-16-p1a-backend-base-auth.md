@@ -1698,6 +1698,7 @@ public class EmailOutboxEntry {
         attempts += 1;
         if (attempts >= 5) {
             status = EmailOutboxStatus.FAILED;
+            payload = Map.of();
         } else {
             nextAttemptAt = now.plusSeconds((long) Math.pow(2, attempts) * 60);
         }
@@ -2625,6 +2626,8 @@ class RegistrationIT extends IntegrationTestBase {
 }
 ```
 
+> 实加固：限流先于密码策略；per-IP 20/h + per-IP+email 5/h（email 用 SHA-256）；`RegisterRequest` 构造时 trim 并限制 email ≤255；新增 429、非法载荷、密码哈希断言；新增 `EmailOutboxEntryTest` 验证终态 FAILED 清空 payload。
+
 - [ ] **Step 2: 运行测试确认失败**
 
 Run:
@@ -2644,9 +2647,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
-        @Email @NotBlank String email,
+        @Email @NotBlank @Size(max = 255) String email,
         @NotBlank @Size(min = 2, max = 40) String nickname,
         @NotBlank String password) {
+
+    public RegisterRequest {
+        email = email == null ? null : email.trim();
+        nickname = nickname == null ? null : nickname.trim();
+    }
 }
 ```
 
@@ -2781,10 +2789,14 @@ public class AuthService {
     @Transactional
     public UserProfileResponse register(String email, String nickname, String password, String ip) {
         String normalized = email.trim().toLowerCase(Locale.ROOT);
-        PasswordPolicy.validate(password);
-        if (!rateLimit.tryAcquire("rl:register:" + ip + ":" + normalized, 5, Duration.ofHours(1))) {
+        if (!rateLimit.tryAcquire("rl:register:ip:" + ip, 20, Duration.ofHours(1))) {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "注册过于频繁，请稍后再试");
         }
+        if (!rateLimit.tryAcquire("rl:register:" + ip + ":" + Hashing.sha256(normalized),
+                5, Duration.ofHours(1))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "注册过于频繁，请稍后再试");
+        }
+        PasswordPolicy.validate(password);
         if (users.existsByEmail(normalized)) {
             throw new BusinessException(ErrorCode.CONFLICT, "邮箱已注册");
         }
