@@ -2387,7 +2387,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -2399,7 +2398,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder,
+    SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             RestAuthEntryPoint authEntryPoint,
                                             RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
@@ -2420,8 +2419,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus",
+                        .requestMatchers("/actuator/health", "/actuator/info",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/error").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -2444,6 +2444,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(props.allowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Request-Id"));
+        config.setExposedHeaders(List.of("X-Trace-Id"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -2465,14 +2466,49 @@ public final class ClientIp {
     }
 
     public static String of(HttpServletRequest request) {
+        String remote = request.getRemoteAddr();
+        if (!isTrustedProxy(remote)) {
+            return remote;
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (isValidIp(realIp)) {
+            return realIp.trim();
+        }
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+            String[] hops = forwarded.split(",");
+            // The nearest proxy appends the peer it saw; take the last hop, not the client-controlled first.
+            String candidate = hops[hops.length - 1].trim();
+            if (isValidIp(candidate)) {
+                return candidate;
+            }
         }
-        return request.getRemoteAddr();
+        return remote;
+    }
+
+    private static boolean isTrustedProxy(String remote) {
+        if (remote == null || remote.isBlank()) {
+            return false;
+        }
+        try {
+            InetAddress address = InetAddress.getByName(remote);
+            return address.isLoopbackAddress() || address.isSiteLocalAddress();
+        } catch (UnknownHostException ex) {
+            return false;
+        }
+    }
+
+    private static boolean isValidIp(String value) {
+        if (value == null) {
+            return false;
+        }
+        String trimmed = value.trim();
+        return !trimmed.isEmpty() && trimmed.length() <= 45 && trimmed.matches("[0-9a-fA-F:.]+");
     }
 }
 ```
+
+> 实际加固：`ClientIp` 仅在 remoteAddr 为回环/内网代理时才信任 `X-Real-IP`/`X-Forwarded-For`，并取最后一跳；新增 `ClientIpTest` 覆盖伪造头、X-Real-IP、最后一跳。`JwtKeyProvider` 对"配置了公钥但没有私钥"启动失败。`SecurityIT` 增加 malformed token 与 `/actuator/prometheus` 401 两个用例。Task 16 的 actuator 测试已改为 health 公开、prometheus 需 ADMIN。
 
 - [ ] **Step 5: 运行测试确认通过**
 
@@ -4615,9 +4651,9 @@ class ApiDocsIT extends IntegrationTestBase {
     }
 
     @Test
-    void healthAndPrometheusArePublic() throws Exception {
+    void healthIsPublicAndActuatorMetricsRequireAdmin() throws Exception {
         mockMvc.perform(get("/actuator/health")).andExpect(status().isOk());
-        mockMvc.perform(get("/actuator/prometheus")).andExpect(status().isOk());
+        mockMvc.perform(get("/actuator/prometheus")).andExpect(status().isUnauthorized());
     }
 }
 ```
