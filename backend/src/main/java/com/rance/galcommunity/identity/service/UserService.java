@@ -15,6 +15,7 @@ import com.rance.galcommunity.shared.api.ErrorCode;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -91,19 +92,21 @@ public class UserService implements IdentityApi {
     public Optional<UserSummary> findUser(long id) {
         return users.findById(id)
                 .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
-                .map(user -> new UserSummary(
-                        user.getId(), user.getNickname(), user.getAvatarUrl()));
+                .map(this::toSummary);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Map<Long, UserSummary> findUsers(Collection<Long> ids) {
-        return users.findAllById(ids).stream()
+        Objects.requireNonNull(ids, "ids");
+        Map<Long, UserSummary> result = users.findAllById(ids).stream()
                 .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
-                .collect(Collectors.toMap(
-                        UserAccount::getId,
-                        user -> new UserSummary(
-                                user.getId(), user.getNickname(), user.getAvatarUrl())));
+                .collect(Collectors.toMap(UserAccount::getId, this::toSummary));
+        return Map.copyOf(result);
+    }
+
+    private UserSummary toSummary(UserAccount user) {
+        return new UserSummary(user.getId(), user.getNickname(), user.getAvatarUrl());
     }
 
     private UserAccount requireActive(long id) {

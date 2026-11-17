@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.rance.galcommunity.IntegrationTestBase;
 import com.rance.galcommunity.identity.api.IdentityApi;
+import com.rance.galcommunity.identity.api.UserSummary;
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.Role;
 import com.rance.galcommunity.identity.domain.UserAccount;
@@ -44,5 +45,35 @@ class IdentityApiIT extends IntegrationTestBase {
         assertThat(result).hasSize(2);
         assertThat(result.get(first.getId()).nickname()).isEqualTo("N-api1@example.com");
         assertThat(identityApi.findUser(banned.getId())).isEmpty();
+    }
+
+    @Test
+    void findUserReturnsActiveSummary() {
+        UserAccount user = create("api4@example.com", AccountStatus.ACTIVE);
+        UserSummary summary = identityApi.findUser(user.getId()).orElseThrow();
+        assertThat(summary.nickname()).isEqualTo("N-api4@example.com");
+        assertThat(summary.avatarUrl()).isNull();
+    }
+
+    @Test
+    void emptyAndMissingIdsReturnEmptyMap() {
+        assertThat(identityApi.findUsers(java.util.List.of())).isEmpty();
+        assertThat(identityApi.findUsers(java.util.List.of(999999L))).isEmpty();
+    }
+
+    @Test
+    void duplicateIdsAreDeduplicated() {
+        UserAccount first = create("api5@example.com", AccountStatus.ACTIVE);
+        UserAccount second = create("api6@example.com", AccountStatus.ACTIVE);
+        Map<Long, UserSummary> result = identityApi.findUsers(
+                java.util.List.of(first.getId(), first.getId(), second.getId()));
+        assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void deletedUserIsOmitted() {
+        UserAccount deleted = create("api7@example.com", AccountStatus.DELETED);
+        assertThat(identityApi.findUser(deleted.getId())).isEmpty();
+        assertThat(identityApi.findUsers(java.util.List.of(deleted.getId()))).isEmpty();
     }
 }
