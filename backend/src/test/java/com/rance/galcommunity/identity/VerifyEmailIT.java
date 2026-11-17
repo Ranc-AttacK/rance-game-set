@@ -6,8 +6,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rance.galcommunity.IntegrationTestBase;
+import com.rance.galcommunity.identity.domain.EmailOutboxStatus;
 import com.rance.galcommunity.identity.repo.EmailOutboxRepository;
 import com.rance.galcommunity.identity.repo.UserAccountRepository;
+import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,5 +88,63 @@ class VerifyEmailIT extends IntegrationTestBase {
         mockMvc.perform(post("/api/v1/auth/resend-verification"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(40101));
+    }
+
+    @Test
+    void invalidTokenReturns42201() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", "not-a-real-token"))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value(42201));
+    }
+
+    @Test
+    void blankTokenReturns40001() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void expiredTokenReturns42201() throws Exception {
+        String token = registerAndGetVerificationToken("verify4@example.com", "Verify", "secret123");
+        long userId = users.findByEmail("verify4@example.com").orElseThrow().getId();
+        jdbcTemplate.update("UPDATE user_email_verifications SET expires_at = ? WHERE user_id = ?",
+                Timestamp.from(Instant.now().minus(Duration.ofDays(1))), userId);
+
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", token))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value(42201));
+    }
+
+    @Test
+    void resendInvalidatesOldToken() throws Exception {
+        String oldToken = registerAndGetVerificationToken("verify5@example.com", "Verify", "secret123");
+        String access = loginToken("verify5@example.com", "secret123");
+
+        mockMvc.perform(post("/api/v1/auth/resend-verification")
+                        .header("Authorization", "Bearer " + access))
+                .andExpect(status().isOk());
+
+        String newToken = outbox.findAll().stream()
+                .filter(entry -> entry.getStatus() == EmailOutboxStatus.PENDING)
+                .findFirst().orElseThrow()
+                .getPayload().get("token").toString();
+
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", oldToken))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value(42201));
+
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", newToken))))
+                .andExpect(status().isOk());
     }
 }

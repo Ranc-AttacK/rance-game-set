@@ -125,14 +125,14 @@ public class AuthService {
 
     @Transactional
     public void resendVerification(long userId) {
-        if (!rateLimit.tryAcquire("rl:resend:" + userId, 3, Duration.ofMinutes(10))) {
-            throw new BusinessException(ErrorCode.RATE_LIMITED, "重发过于频繁");
-        }
         UserAccount user = users.findById(userId)
                 .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
         if (user.isEmailVerified()) {
             throw new BusinessException(ErrorCode.BUSINESS_RULE, "邮箱已验证");
+        }
+        if (!rateLimit.tryAcquire("rl:resend:" + userId, 3, Duration.ofMinutes(10))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "重发过于频繁");
         }
         issueVerification(user);
     }
@@ -153,6 +153,7 @@ public class AuthService {
     }
 
     private void issueVerification(UserAccount user) {
+        verifications.expireActive(user.getId(), Instant.now());
         String rawToken = Hashing.randomToken();
         EmailVerification verification = new EmailVerification();
         verification.setUserId(user.getId());
