@@ -3639,6 +3639,8 @@ public record VerifyEmailRequest(@NotBlank String token) {
 ```
 补充 import：`com.rance.galcommunity.identity.web.dto.VerifyEmailRequest`。
 
+> 实加固：`SecurityConfig` 改为显式 auth 公开列表，`/resend-verification` 需认证；`issueVerification` 先 `expireActive` 使旧 token 失效；`resendVerification` 先校验存在/已验证再限流；新增 invalid/blank/expired/old-token 失效测试（全量 59）。并发双验的条件更新留到 Task 13 reset 前统一处理。
+
 - [ ] **Step 4: 运行测试确认通过**
 
 Run:
