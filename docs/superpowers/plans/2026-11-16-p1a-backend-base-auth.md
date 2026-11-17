@@ -4724,6 +4724,8 @@ public class OpenApiConfig {
 }
 ```
 
+> 评审后置项（不阻塞 Task 17）：给受保护端点加 `@SecurityRequirement` 让 Swagger 正确显示锁；生产 profile 收紧 `/swagger-ui` 与 `/v3/api-docs`；补 ADMIN 200 / USER 403 的 actuator 正反测试；`springdoc.paths-to-match: /api/**` 避免测试 probe 混入文档；日志 traceId 的 logback 捕获测试。全量 87。
+
 - [ ] **Step 4: 运行测试确认通过**
 
 Run:
