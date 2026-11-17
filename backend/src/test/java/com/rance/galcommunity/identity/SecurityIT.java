@@ -71,4 +71,18 @@ class SecurityIT extends IntegrationTestBase {
         mockMvc.perform(get("/api/v1/admin/probe").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void rejectsMalformedToken() throws Exception {
+        mockMvc.perform(get("/test/secure/me").header("Authorization", "Bearer not-a-jwt"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101));
+    }
+
+    @Test
+    void actuatorPrometheusRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40101));
+    }
 }

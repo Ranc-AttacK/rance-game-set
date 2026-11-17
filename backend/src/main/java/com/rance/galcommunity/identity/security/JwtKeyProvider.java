@@ -30,6 +30,11 @@ public class JwtKeyProvider {
             boolean hasPrivate = props.privateKey() != null && !props.privateKey().isBlank();
             boolean hasPublic = props.publicKey() != null && !props.publicKey().isBlank();
 
+            if (!hasPrivate && hasPublic) {
+                throw new IllegalStateException(
+                        "Public key configured without private key; token signing requires a private key");
+            }
+
             if (hasPrivate) {
                 privateKey = (RSAPrivateKey) keyFactory.generatePrivate(
                         new PKCS8EncodedKeySpec(decodePem(props.privateKey())));
