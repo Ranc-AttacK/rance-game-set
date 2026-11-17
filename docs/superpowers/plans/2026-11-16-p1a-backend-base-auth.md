@@ -4473,6 +4473,8 @@ public class UserController {
 }
 ```
 
+> 实加固：`UpdateProfileRequest` 构造时 trim 并允许空 avatarUrl 以清空；注销墓碑邮箱加 UUID 防抢注，并 `expireActive` 验证/reset token；`verifyEmail` 过滤 ACTIVE；新增 avatar 清空、昵称 trim 边界、非法头像、封禁公开资料 404、注销后 access 404、旧邮箱重新注册测试（全量 80）。
+
 - [ ] **Step 4: 运行测试确认通过**
 
 Run:
