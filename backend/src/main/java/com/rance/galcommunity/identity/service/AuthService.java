@@ -110,6 +110,43 @@ public class AuthService {
         return new LoginResult(access, refreshToken, UserProfileResponse.self(user));
     }
 
+    @Transactional(noRollbackFor = BusinessException.class)
+    public LoginResult refresh(String rawRefreshToken) {
+        RefreshToken token = refreshTokens
+                .findByTokenHash(Hashing.sha256(rawRefreshToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录"));
+
+        if (token.getRevokedAt() != null || token.getReplacedBy() != null) {
+            refreshTokens.revokeFamily(token.getFamilyId(), Instant.now());
+            throw new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录");
+        }
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            throw new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录");
+        }
+
+        UserAccount user = users.findById(token.getUserId())
+                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录"));
+
+        String newRaw = createRefreshToken(user, token.getFamilyId());
+        RefreshToken newToken = refreshTokens
+                .findByTokenHash(Hashing.sha256(newRaw)).orElseThrow();
+        token.setRevokedAt(Instant.now());
+        token.setReplacedBy(newToken.getId());
+
+        TokenService.IssuedToken access = tokenService.issue(user);
+        return new LoginResult(access, newRaw, UserProfileResponse.self(user));
+    }
+
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            return;
+        }
+        refreshTokens.findByTokenHash(Hashing.sha256(rawRefreshToken))
+                .ifPresent(token -> refreshTokens.revokeFamily(token.getFamilyId(), Instant.now()));
+    }
+
     @Transactional
     public void verifyEmail(String rawToken) {
         EmailVerification verification = verifications.findByTokenHash(Hashing.sha256(rawToken))

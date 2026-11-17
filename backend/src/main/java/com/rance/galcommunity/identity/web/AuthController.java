@@ -1,5 +1,6 @@
 package com.rance.galcommunity.identity.web;
 
+import com.rance.galcommunity.identity.security.OriginGuard;
 import com.rance.galcommunity.identity.security.RefreshCookie;
 import com.rance.galcommunity.identity.service.AuthService;
 import com.rance.galcommunity.identity.web.dto.LoginRequest;
@@ -8,6 +9,8 @@ import com.rance.galcommunity.identity.web.dto.RegisterRequest;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.identity.web.dto.VerifyEmailRequest;
 import com.rance.galcommunity.shared.api.ApiResponse;
+import com.rance.galcommunity.shared.api.BusinessException;
+import com.rance.galcommunity.shared.api.ErrorCode;
 import com.rance.galcommunity.shared.web.ClientIp;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,10 +31,12 @@ public class AuthController {
 
     private final AuthService authService;
     private final RefreshCookie refreshCookie;
+    private final OriginGuard originGuard;
 
-    public AuthController(AuthService authService, RefreshCookie refreshCookie) {
+    public AuthController(AuthService authService, RefreshCookie refreshCookie, OriginGuard originGuard) {
         this.authService = authService;
         this.refreshCookie = refreshCookie;
+        this.originGuard = originGuard;
     }
 
     @PostMapping("/register")
@@ -52,6 +57,30 @@ public class AuthController {
                 refreshCookie.create(result.refreshToken()).toString());
         return ApiResponse.ok(new LoginResponse(result.access().value(),
                 result.access().expiresInSeconds(), result.user()));
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<LoginResponse> refresh(HttpServletRequest httpRequest,
+                                              HttpServletResponse response) {
+        originGuard.check(httpRequest);
+        String raw = refreshCookie.read(httpRequest);
+        if (raw == null) {
+            throw new BusinessException(ErrorCode.TOKEN_REUSED, "登录已失效，请重新登录");
+        }
+        AuthService.LoginResult result = authService.refresh(raw);
+        response.addHeader(HttpHeaders.SET_COOKIE,
+                refreshCookie.create(result.refreshToken()).toString());
+        return ApiResponse.ok(new LoginResponse(result.access().value(),
+                result.access().expiresInSeconds(), result.user()));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletRequest httpRequest,
+                                    HttpServletResponse response) {
+        originGuard.check(httpRequest);
+        authService.logout(refreshCookie.read(httpRequest));
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.clear().toString());
+        return ApiResponse.ok();
     }
 
     @PostMapping("/verify-email")
