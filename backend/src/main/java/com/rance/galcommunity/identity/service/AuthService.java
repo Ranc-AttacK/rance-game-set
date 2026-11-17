@@ -3,10 +3,13 @@ package com.rance.galcommunity.identity.service;
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.EmailTemplate;
 import com.rance.galcommunity.identity.domain.EmailVerification;
+import com.rance.galcommunity.identity.domain.RefreshToken;
 import com.rance.galcommunity.identity.domain.Role;
 import com.rance.galcommunity.identity.domain.UserAccount;
 import com.rance.galcommunity.identity.repo.EmailVerificationRepository;
+import com.rance.galcommunity.identity.repo.RefreshTokenRepository;
 import com.rance.galcommunity.identity.repo.UserAccountRepository;
+import com.rance.galcommunity.identity.security.AppProperties;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.shared.api.BusinessException;
 import com.rance.galcommunity.shared.api.ErrorCode;
@@ -17,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,17 +33,26 @@ public class AuthService {
     private final EmailOutboxService emailOutbox;
     private final PasswordEncoder passwordEncoder;
     private final RateLimitService rateLimit;
+    private final RefreshTokenRepository refreshTokens;
+    private final TokenService tokenService;
+    private final AppProperties props;
 
     public AuthService(UserAccountRepository users,
                        EmailVerificationRepository verifications,
                        EmailOutboxService emailOutbox,
                        PasswordEncoder passwordEncoder,
-                       RateLimitService rateLimit) {
+                       RateLimitService rateLimit,
+                       RefreshTokenRepository refreshTokens,
+                       TokenService tokenService,
+                       AppProperties props) {
         this.users = users;
         this.verifications = verifications;
         this.emailOutbox = emailOutbox;
         this.passwordEncoder = passwordEncoder;
         this.rateLimit = rateLimit;
+        this.refreshTokens = refreshTokens;
+        this.tokenService = tokenService;
+        this.props = props;
     }
 
     @Transactional
@@ -68,6 +81,42 @@ public class AuthService {
 
         issueVerification(user);
         return UserProfileResponse.self(user);
+    }
+
+    @Transactional
+    public LoginResult login(String email, String password, String ip) {
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        if (!rateLimit.tryAcquire("rl:login:" + ip + ":" + Hashing.sha256(normalized),
+                10, Duration.ofMinutes(5))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "登录尝试过于频繁");
+        }
+
+        UserAccount user = users.findByEmail(normalized)
+                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED, "邮箱或密码错误"));
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.UNAUTHENTICATED, "邮箱或密码错误");
+        }
+
+        TokenService.IssuedToken access = tokenService.issue(user);
+        String refreshToken = createRefreshToken(user, UUID.randomUUID().toString());
+        return new LoginResult(access, refreshToken, UserProfileResponse.self(user));
+    }
+
+    private String createRefreshToken(UserAccount user, String familyId) {
+        String raw = Hashing.randomToken();
+        RefreshToken token = new RefreshToken();
+        token.setUserId(user.getId());
+        token.setFamilyId(familyId);
+        token.setTokenHash(Hashing.sha256(raw));
+        token.setExpiresAt(Instant.now().plus(props.jwt().refreshTtl()));
+        refreshTokens.save(token);
+        return raw;
+    }
+
+    public record LoginResult(TokenService.IssuedToken access, String refreshToken,
+                              UserProfileResponse user) {
     }
 
     private void issueVerification(UserAccount user) {
