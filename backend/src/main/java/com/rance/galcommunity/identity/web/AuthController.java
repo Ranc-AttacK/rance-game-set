@@ -6,6 +6,7 @@ import com.rance.galcommunity.identity.web.dto.LoginRequest;
 import com.rance.galcommunity.identity.web.dto.LoginResponse;
 import com.rance.galcommunity.identity.web.dto.RegisterRequest;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
+import com.rance.galcommunity.identity.web.dto.VerifyEmailRequest;
 import com.rance.galcommunity.shared.api.ApiResponse;
 import com.rance.galcommunity.shared.web.ClientIp;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,5 +52,17 @@ public class AuthController {
                 refreshCookie.create(result.refreshToken()).toString());
         return ApiResponse.ok(new LoginResponse(result.access().value(),
                 result.access().expiresInSeconds(), result.user()));
+    }
+
+    @PostMapping("/verify-email")
+    public ApiResponse<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request.token());
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/resend-verification")
+    public ApiResponse<Void> resendVerification(@AuthenticationPrincipal Jwt jwt) {
+        authService.resendVerification(Long.parseLong(jwt.getSubject()));
+        return ApiResponse.ok();
     }
 }

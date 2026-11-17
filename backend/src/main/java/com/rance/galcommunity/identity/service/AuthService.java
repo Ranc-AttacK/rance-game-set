@@ -110,6 +110,33 @@ public class AuthService {
         return new LoginResult(access, refreshToken, UserProfileResponse.self(user));
     }
 
+    @Transactional
+    public void verifyEmail(String rawToken) {
+        EmailVerification verification = verifications.findByTokenHash(Hashing.sha256(rawToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.BUSINESS_RULE, "验证链接无效"));
+        if (verification.getUsedAt() != null || verification.getExpiresAt().isBefore(Instant.now())) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE, "验证链接已失效");
+        }
+        UserAccount user = users.findById(verification.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
+        user.setEmailVerified(true);
+        verification.setUsedAt(Instant.now());
+    }
+
+    @Transactional
+    public void resendVerification(long userId) {
+        if (!rateLimit.tryAcquire("rl:resend:" + userId, 3, Duration.ofMinutes(10))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "重发过于频繁");
+        }
+        UserAccount user = users.findById(userId)
+                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
+        if (user.isEmailVerified()) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE, "邮箱已验证");
+        }
+        issueVerification(user);
+    }
+
     private String createRefreshToken(UserAccount user, String familyId) {
         String raw = Hashing.randomToken();
         RefreshToken token = new RefreshToken();
