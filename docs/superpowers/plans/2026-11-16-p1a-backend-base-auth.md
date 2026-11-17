@@ -4144,6 +4144,8 @@ import com.rance.galcommunity.identity.security.AppProperties;
 ```
 补充 import：`ForgotPasswordRequest`、`ResetPasswordRequest`。
 
+> 实加固：forgot 增加 per-user 5/h；forgot/reset 以用户行悲观锁串行化；reset 成功时 `expireActive` 作废同用户其他 reset token；`findUserIdByTokenHash` 标量预读避免一级缓存读到旧 usedAt；新增 invalid/expired/weak/second-forgot/concurrent 测试与双 session 吊销（全量 74）。
+
 - [ ] **Step 5: 运行测试确认通过**
 
 Run:
