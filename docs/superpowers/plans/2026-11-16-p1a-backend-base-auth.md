@@ -3882,6 +3882,8 @@ public class OriginGuard {
     }
 ```
 
+> 实加固：抽出 `RefreshTokenService`；`findByTokenHashForUpdate` 悲观锁串行化轮换，避免并发双刷各自拿到新 token；非 ACTIVE 用户也吊销令牌族；新增 missing/expired/banned/concurrent 测试。foreign Origin 由 CORS 先返回 403（无 ApiResponse），测试只断言 403；OriginGuard 保留为纵深防御。全量 67。
+
 - [ ] **Step 5: 运行测试确认通过**
 
 Run:
