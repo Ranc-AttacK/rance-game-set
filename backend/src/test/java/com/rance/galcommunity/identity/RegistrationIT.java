@@ -35,16 +35,19 @@ class RegistrationIT extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
                                 "email", "Alice@Example.com",
-                                "nickname", "Alice",
+                                "nickname", "  Alice  ",
                                 "password", "secret123"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.email").value("alice@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("Alice"))
                 .andExpect(jsonPath("$.data.emailVerified").value(false))
                 .andReturn();
 
         assertThat(result.getResponse().getContentAsString()).contains("alice@example.com");
         assertThat(users.findByEmail("alice@example.com")).isPresent();
+        assertThat(users.findByEmail("alice@example.com").orElseThrow().getPasswordHash())
+                .startsWith("$2").isNotEqualTo("secret123");
 
         EmailOutboxEntry email = outbox.findAll().get(0);
         assertThat(email.getStatus()).isEqualTo(EmailOutboxStatus.PENDING);
@@ -75,6 +78,36 @@ class RegistrationIT extends IntegrationTestBase {
                                 "email", "weak@example.com",
                                 "nickname", "Weak",
                                 "password", "short"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void sixthRegistrationForSameEmailIsRateLimited() throws Exception {
+        String body = objectMapper.writeValueAsString(Map.of(
+                "email", "ratelimit@example.com", "nickname", "Rate", "password", "secret123"));
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+        for (int i = 0; i < 4; i++) {
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isConflict());
+        }
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value(42901));
+    }
+
+    @Test
+    void invalidPayloadReturns40001() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", "not-an-email",
+                                "nickname", "A",
+                                "password", "secret123"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(40001));
     }

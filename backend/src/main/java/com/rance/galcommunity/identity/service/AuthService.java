@@ -45,10 +45,14 @@ public class AuthService {
     @Transactional
     public UserProfileResponse register(String email, String nickname, String password, String ip) {
         String normalized = email.trim().toLowerCase(Locale.ROOT);
-        PasswordPolicy.validate(password);
-        if (!rateLimit.tryAcquire("rl:register:" + ip + ":" + normalized, 5, Duration.ofHours(1))) {
+        if (!rateLimit.tryAcquire("rl:register:ip:" + ip, 20, Duration.ofHours(1))) {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "注册过于频繁，请稍后再试");
         }
+        if (!rateLimit.tryAcquire("rl:register:" + ip + ":" + Hashing.sha256(normalized),
+                5, Duration.ofHours(1))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "注册过于频繁，请稍后再试");
+        }
+        PasswordPolicy.validate(password);
         if (users.existsByEmail(normalized)) {
             throw new BusinessException(ErrorCode.CONFLICT, "邮箱已注册");
         }

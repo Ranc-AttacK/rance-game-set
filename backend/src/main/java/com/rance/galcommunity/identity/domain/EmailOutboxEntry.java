@@ -72,6 +72,7 @@ public class EmailOutboxEntry {
         attempts += 1;
         if (attempts >= 5) {
             status = EmailOutboxStatus.FAILED;
+            payload = Map.of();
         } else {
             nextAttemptAt = now.plusSeconds((long) Math.pow(2, attempts) * 60);
         }
