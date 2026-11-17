@@ -3458,6 +3458,8 @@ import com.rance.galcommunity.identity.security.AppProperties;
 ```
 补充 import：`com.rance.galcommunity.identity.security.RefreshCookie`、`com.rance.galcommunity.identity.web.dto.LoginRequest`、`com.rance.galcommunity.identity.web.dto.LoginResponse`。
 
+> 实加固：登录增加 per-IP 50/5min 与 per-IP+email 10/5min 双桶；未知/非 ACTIVE 用户也执行 dummy BCrypt 比较以消除时序枚举；login 限流 key 使用 SHA-256(email)；`LoginRequest` 构造时 trim 并限制 email ≤255；`LoginIT` 新增 banned、非法载荷、大小写、refresh 行哈希/过期/Cookie Path-Max-Age 断言（全量 51）。`RefreshTokenService` 抽取留到 Task 12。
+
 - [ ] **Step 5: 运行测试确认通过**
 
 Run:
