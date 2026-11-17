@@ -128,6 +128,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.BUSINESS_RULE, "验证链接已失效");
         }
         UserAccount user = users.findById(verification.getUserId())
+                .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
         user.setEmailVerified(true);
         verification.setUsedAt(Instant.now());

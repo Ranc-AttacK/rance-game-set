@@ -2,12 +2,15 @@ package com.rance.galcommunity.identity.service;
 
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.UserAccount;
+import com.rance.galcommunity.identity.repo.EmailVerificationRepository;
+import com.rance.galcommunity.identity.repo.PasswordResetRepository;
 import com.rance.galcommunity.identity.repo.UserAccountRepository;
 import com.rance.galcommunity.identity.web.dto.PublicUserProfile;
 import com.rance.galcommunity.identity.web.dto.UpdateProfileRequest;
 import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.shared.api.BusinessException;
 import com.rance.galcommunity.shared.api.ErrorCode;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,12 +22,19 @@ public class UserService {
     private final UserAccountRepository users;
     private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationRepository verifications;
+    private final PasswordResetRepository resets;
 
-    public UserService(UserAccountRepository users, RefreshTokenService refreshTokenService,
-                       PasswordEncoder passwordEncoder) {
+    public UserService(UserAccountRepository users,
+                       RefreshTokenService refreshTokenService,
+                       PasswordEncoder passwordEncoder,
+                       EmailVerificationRepository verifications,
+                       PasswordResetRepository resets) {
         this.users = users;
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
+        this.verifications = verifications;
+        this.resets = resets;
     }
 
     @Transactional(readOnly = true)
@@ -59,12 +69,14 @@ public class UserService {
     public void deleteAccount(long id) {
         UserAccount user = requireActive(id);
         user.setStatus(AccountStatus.DELETED);
-        user.setEmail("deleted-" + user.getId() + "@invalid.local");
+        user.setEmail("deleted-" + user.getId() + "-" + UUID.randomUUID() + "@invalid.local");
         user.setNickname("已注销用户");
         user.setAvatarUrl(null);
         user.setBio(null);
         user.setEmailVerified(false);
         user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        verifications.expireActive(user.getId(), Instant.now());
+        resets.expireActive(user.getId(), Instant.now());
         refreshTokenService.revokeAllForUser(user.getId());
     }
 

@@ -1,6 +1,7 @@
 package com.rance.galcommunity.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -35,6 +36,14 @@ class ProfileIT extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andReturn();
         return JsonPath.read(result.getResponse().getContentAsString(), "$.data.accessToken");
+    }
+
+    private void registerRaw(String email) throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", email, "nickname", "Raw", "password", "secret123"))))
+                .andExpect(status().isCreated());
     }
 
     private Cookie loginCookie(String email, String password) throws Exception {
@@ -94,10 +103,20 @@ class ProfileIT extends IntegrationTestBase {
                         .header("Authorization", "Bearer " + access)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "nickname", "After", "bio", "hello"))))
+                                "nickname", "After", "bio", "hello",
+                                "avatarUrl", "https://example.com/a.png"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nickname").value("After"))
                 .andExpect(jsonPath("$.data.bio").value("hello"));
+
+        mockMvc.perform(patch("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "avatarUrl", "", "bio", ""))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.avatarUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.bio").value(nullValue()));
     }
 
     @Test
@@ -125,5 +144,53 @@ class ProfileIT extends IntegrationTestBase {
                         .cookie(refresh).header("Origin", "http://localhost:5173"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(40103));
+
+        mockMvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + access))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401));
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", "profile3@example.com", "nickname", "Again",
+                                "password", "secret123"))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void paddedNicknameBelowMinReturns40001() throws Exception {
+        registerRaw("profile4@example.com");
+        String access = loginToken("profile4@example.com", "secret123");
+        mockMvc.perform(patch("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("nickname", "  a  "))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void invalidAvatarUrlReturns40001() throws Exception {
+        registerRaw("profile5@example.com");
+        String access = loginToken("profile5@example.com", "secret123");
+        mockMvc.perform(patch("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("avatarUrl", "not-a-url"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40001));
+    }
+
+    @Test
+    void bannedUserPublicProfileIsNotFound() throws Exception {
+        registerAndGetVerificationToken("profile6@example.com", "Profile", "secret123");
+        long id = users.findByEmail("profile6@example.com").orElseThrow().getId();
+        var user = users.findById(id).orElseThrow();
+        user.setStatus(AccountStatus.BANNED);
+        users.saveAndFlush(user);
+
+        mockMvc.perform(get("/api/v1/users/" + id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40401));
     }
 }
