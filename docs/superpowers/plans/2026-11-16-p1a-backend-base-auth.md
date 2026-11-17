@@ -3125,6 +3125,8 @@ public class EmailOutboxScheduler {
 }
 ```
 
+> 实加固：`processDue` 不再持有批事务，改为按条目 reload/save，SMTP I/O 不占数据库连接；payload 缺 token 视为失败；日志不记录收件人/token，终态 FAILED 打 error；SMTP 配置增加 5s/10s 超时与 `MAIL_USERNAME/MAIL_PASSWORD/MAIL_SMTP_AUTH/MAIL_SMTP_STARTTLS` 环境变量；新增 `SmtpEmailSenderTest`（全量 45 个测试）。
+
 - [ ] **Step 5: 在测试基座中加入邮件 mock 与注册助手**
 
 修改 `backend/src/test/java/com/rance/galcommunity/IntegrationTestBase.java`，在类体内加入：
