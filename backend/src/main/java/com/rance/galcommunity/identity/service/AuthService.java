@@ -36,6 +36,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokens;
     private final TokenService tokenService;
     private final AppProperties props;
+    private final String dummyPasswordHash;
 
     public AuthService(UserAccountRepository users,
                        EmailVerificationRepository verifications,
@@ -53,6 +54,7 @@ public class AuthService {
         this.refreshTokens = refreshTokens;
         this.tokenService = tokenService;
         this.props = props;
+        this.dummyPasswordHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
 
     @Transactional
@@ -86,6 +88,9 @@ public class AuthService {
     @Transactional
     public LoginResult login(String email, String password, String ip) {
         String normalized = email.trim().toLowerCase(Locale.ROOT);
+        if (!rateLimit.tryAcquire("rl:login:ip:" + ip, 50, Duration.ofMinutes(5))) {
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "登录尝试过于频繁");
+        }
         if (!rateLimit.tryAcquire("rl:login:" + ip + ":" + Hashing.sha256(normalized),
                 10, Duration.ofMinutes(5))) {
             throw new BusinessException(ErrorCode.RATE_LIMITED, "登录尝试过于频繁");
@@ -93,14 +98,15 @@ public class AuthService {
 
         UserAccount user = users.findByEmail(normalized)
                 .filter(candidate -> candidate.getStatus() == AccountStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED, "邮箱或密码错误"));
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+                .orElse(null);
+        String passwordHash = user != null ? user.getPasswordHash() : dummyPasswordHash;
+        boolean matches = passwordEncoder.matches(password, passwordHash);
+        if (user == null || !matches) {
             throw new BusinessException(ErrorCode.UNAUTHENTICATED, "邮箱或密码错误");
         }
 
         TokenService.IssuedToken access = tokenService.issue(user);
-        String refreshToken = createRefreshToken(user, UUID.randomUUID().toString());
+        String refreshToken = createRefreshToken(user, java.util.UUID.randomUUID().toString());
         return new LoginResult(access, refreshToken, UserProfileResponse.self(user));
     }
 
