@@ -1,5 +1,7 @@
 package com.rance.galcommunity.identity.service;
 
+import com.rance.galcommunity.identity.api.IdentityApi;
+import com.rance.galcommunity.identity.api.UserSummary;
 import com.rance.galcommunity.identity.domain.AccountStatus;
 import com.rance.galcommunity.identity.domain.UserAccount;
 import com.rance.galcommunity.identity.repo.EmailVerificationRepository;
@@ -11,13 +13,17 @@ import com.rance.galcommunity.identity.web.dto.UserProfileResponse;
 import com.rance.galcommunity.shared.api.BusinessException;
 import com.rance.galcommunity.shared.api.ErrorCode;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class UserService {
+public class UserService implements IdentityApi {
 
     private final UserAccountRepository users;
     private final RefreshTokenService refreshTokenService;
@@ -78,6 +84,26 @@ public class UserService {
         verifications.expireActive(user.getId(), Instant.now());
         resets.expireActive(user.getId(), Instant.now());
         refreshTokenService.revokeAllForUser(user.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UserSummary> findUser(long id) {
+        return users.findById(id)
+                .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
+                .map(user -> new UserSummary(
+                        user.getId(), user.getNickname(), user.getAvatarUrl()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, UserSummary> findUsers(Collection<Long> ids) {
+        return users.findAllById(ids).stream()
+                .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
+                .collect(Collectors.toMap(
+                        UserAccount::getId,
+                        user -> new UserSummary(
+                                user.getId(), user.getNickname(), user.getAvatarUrl())));
     }
 
     private UserAccount requireActive(long id) {
