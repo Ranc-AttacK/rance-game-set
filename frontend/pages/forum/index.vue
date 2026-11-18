@@ -12,15 +12,18 @@ const categories = computed(() => data.value ?? [])
 
 <template>
   <section class="space-y-6">
-    <header class="flex flex-wrap items-end justify-between gap-3">
+    <header class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold">论坛</h1>
-        <p class="mt-1 text-sm text-slate-400">按分区浏览讨论；登录并验证邮箱后可发帖。</p>
+        <p class="kicker">GUILD QUEST BOARD</p>
+        <h1 class="section-title mt-2">论坛</h1>
+        <p class="mt-1.5 text-sm text-parchment-100/70">按分区浏览讨论；登录并验证邮箱后可发帖。</p>
       </div>
       <NuxtLink v-if="auth.isAuthenticated" to="/topics/new" class="btn">发主题</NuxtLink>
     </header>
 
-    <p v-if="error" class="rounded border border-red-500/40 bg-red-500/10 p-4 text-red-300">
+    <div class="divider-gold" aria-hidden="true" />
+
+    <p v-if="error" class="rounded-lg border border-wine-500/50 bg-wine-600/15 p-4 text-sm text-wine-100">
       分区加载失败，请稍后重试。
     </p>
 

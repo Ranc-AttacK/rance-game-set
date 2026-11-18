@@ -74,56 +74,66 @@ async function logout() {
 
 <template>
   <div v-if="auth.user" class="mx-auto max-w-2xl space-y-6">
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-semibold">{{ auth.user.nickname }}</h1>
-          <p class="mt-1 text-sm text-slate-400">{{ auth.user.email }} · {{ auth.user.role }}</p>
+    <section class="panel relative overflow-hidden p-6">
+      <span class="rivet left-3 top-3" aria-hidden="true" />
+      <span class="rivet right-3 top-3" aria-hidden="true" />
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="medallion h-14 w-14 shrink-0 text-2xl" aria-hidden="true">🛡️</div>
+          <div class="min-w-0">
+            <p class="kicker">ADVENTURER PROFILE</p>
+            <h1 class="mt-1 font-display text-2xl font-bold tracking-wide text-parchment-50">{{ auth.user.nickname }}</h1>
+            <p class="mt-1 text-sm text-parchment-100/65">{{ auth.user.email }} · {{ auth.user.role }}</p>
+          </div>
         </div>
         <span
-          class="rounded-full px-3 py-1 text-xs"
-          :class="auth.user.emailVerified ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'"
+          class="rounded-full border px-3 py-1 text-xs"
+          :class="auth.user.emailVerified
+            ? 'border-emerald-600/40 bg-emerald-500/10 text-emerald-200'
+            : 'border-amber-500/40 bg-amber-500/10 text-amber-200'"
         >
           {{ auth.user.emailVerified ? '邮箱已验证' : '邮箱未验证' }}
         </span>
       </div>
+      <div class="divider-gold my-4" aria-hidden="true" />
       <button
         v-if="!auth.user.emailVerified"
-        class="btn-ghost mt-4"
+        class="btn-ghost"
         :disabled="resending"
         @click="resend"
       >
         {{ resending ? '发送中…' : '重新发送验证邮件' }}
       </button>
+      <p v-else class="text-xs text-parchment-100/55">你的冒险者身份已通过验证，可在各分区接取委托。</p>
     </section>
 
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-6">
-      <h2 class="text-lg font-medium">编辑资料</h2>
+    <section class="panel p-6">
+      <h2 class="font-display text-lg font-semibold text-parchment-50">编辑资料</h2>
       <form class="mt-4 space-y-4" @submit.prevent="save">
-        <label class="block text-sm text-slate-300">
+        <label class="block text-sm text-parchment-100/80">
           昵称
           <input v-model="form.nickname" type="text" minlength="2" maxlength="40" required class="input mt-1" />
         </label>
-        <label class="block text-sm text-slate-300">
+        <label class="block text-sm text-parchment-100/80">
           头像 URL
           <input v-model="form.avatarUrl" type="url" class="input mt-1" placeholder="https://example.com/avatar.png（留空清除）" />
         </label>
-        <label class="block text-sm text-slate-300">
+        <label class="block text-sm text-parchment-100/80">
           简介
           <textarea v-model="form.bio" rows="3" maxlength="500" class="input mt-1" placeholder="介绍一下自己（留空清除）"></textarea>
         </label>
         <Alert v-if="message" :type="messageType" :message="message" />
-        <div class="flex gap-3">
+        <div class="flex flex-wrap gap-3">
           <button class="btn" type="submit" :disabled="saving">{{ saving ? '保存中…' : '保存资料' }}</button>
           <button class="btn-ghost" type="button" @click="logout">退出登录</button>
         </div>
       </form>
     </section>
 
-    <section class="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-      <h2 class="text-lg font-medium text-red-300">危险操作</h2>
-      <p class="mt-2 text-sm text-slate-400">注销后邮箱会被匿名化，所有刷新会话立即失效。</p>
-      <button class="mt-4 rounded-lg border border-red-500/40 px-4 py-2 text-sm text-red-300 hover:bg-red-500/10" type="button" @click="removeAccount">
+    <section class="rounded-guild border border-wine-500/30 bg-wine-900/25 p-6">
+      <h2 class="font-display text-lg font-semibold text-wine-200">危险操作</h2>
+      <p class="mt-2 text-sm text-parchment-100/65">注销后邮箱会被匿名化，所有刷新会话立即失效。</p>
+      <button class="btn-danger mt-4" type="button" @click="removeAccount">
         注销账号
       </button>
     </section>

@@ -42,21 +42,22 @@ const totalPages = computed(() => {
 
 <template>
   <article v-if="topic" class="space-y-6">
-    <header class="space-y-2">
-      <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-        <NuxtLink :to="`/forum/${topic.categorySlug}`" class="text-brand-300">
+    <header class="panel relative overflow-hidden p-5 sm:p-6">
+      <span class="rivet right-3 top-3" aria-hidden="true" />
+      <div class="flex flex-wrap items-center gap-2 text-xs text-parchment-100/65">
+        <NuxtLink :to="`/forum/${topic.categorySlug}`" class="text-gold-300 transition hover:text-gold-100">
           {{ topic.categoryName }}
         </NuxtLink>
-        <span v-if="topic.pinned" class="rounded bg-brand-500/20 px-2 py-0.5 text-brand-200">置顶</span>
-        <span v-if="topic.locked" class="rounded bg-amber-500/20 px-2 py-0.5 text-amber-200">已锁定</span>
+        <span v-if="topic.pinned" class="badge-wine">置顶</span>
+        <span v-if="topic.locked" class="badge-amber">已锁定</span>
         <span>{{ topic.viewCount }} 浏览</span>
       </div>
-      <h1 class="text-2xl font-bold">{{ topic.title }}</h1>
-      <p class="text-sm text-slate-400">
+      <h1 class="mt-3 font-display text-2xl font-bold leading-snug tracking-wide text-parchment-50">{{ topic.title }}</h1>
+      <p class="mt-2 text-sm text-parchment-100/65">
         由 {{ topic.author.nickname }} 发布于 <LocalTime :value="topic.createdAt" />
       </p>
-      <ul v-if="topic.tags.length" class="flex flex-wrap gap-2">
-        <li v-for="tag in topic.tags" :key="tag.id" class="rounded bg-white/10 px-2 py-0.5 text-xs">
+      <ul v-if="topic.tags.length" class="mt-3 flex flex-wrap gap-2">
+        <li v-for="tag in topic.tags" :key="tag.id" class="badge">
           #{{ tag.name }}
         </li>
       </ul>
@@ -74,7 +75,7 @@ const totalPages = computed(() => {
       >
         上一页
       </NuxtLink>
-      <span class="px-3 py-2 text-sm text-slate-400">第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
+      <span class="px-3 py-2 text-sm text-parchment-100/65">第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
       <NuxtLink
         v-if="page < totalPages"
         :to="`/topics/${topic.id}?page=${page + 1}`"
@@ -86,10 +87,10 @@ const totalPages = computed(() => {
 
     <section
       v-if="auth.isAuthenticated && !topic.locked"
-      class="space-y-3 rounded-lg border border-white/10 bg-white/5 p-4"
+      class="panel space-y-3 p-5"
     >
-      <h2 class="font-semibold">回复</h2>
-      <p v-if="!auth.user?.emailVerified" class="text-sm text-amber-300">
+      <h2 class="font-display text-lg font-semibold text-parchment-50">回复</h2>
+      <p v-if="!auth.user?.emailVerified" class="text-sm text-amber-200">
         请先验证邮箱后再发言。
       </p>
       <template v-else>
@@ -100,20 +101,20 @@ const totalPages = computed(() => {
           class="input"
           placeholder="写下你的回复…"
         />
-        <p v-if="replyError" class="text-sm text-red-300">{{ replyError }}</p>
+        <p v-if="replyError" class="text-sm text-wine-200">{{ replyError }}</p>
         <button class="btn" type="button" :disabled="submitting" @click="submitReply">
           {{ submitting ? '发送中…' : '发布回复' }}
         </button>
       </template>
     </section>
-    <p v-else-if="!auth.isAuthenticated" class="text-sm text-slate-400">
-      <NuxtLink to="/login" class="text-brand-300">登录</NuxtLink> 后参与讨论。
+    <p v-else-if="!auth.isAuthenticated" class="text-sm text-parchment-100/70">
+      <NuxtLink to="/login" class="text-gold-300 transition hover:text-gold-100">登录</NuxtLink> 后参与讨论。
     </p>
-    <p v-else class="text-sm text-slate-400">主题已锁定，暂不能回复。</p>
+    <p v-else class="text-sm text-parchment-100/70">主题已锁定，暂不能回复。</p>
   </article>
 
-  <p v-else-if="error" class="rounded border border-white/10 bg-white/5 p-6 text-slate-400">
+  <p v-else-if="error" class="panel-soft p-6 text-parchment-100/70">
     主题不存在或已删除。
   </p>
-  <p v-else class="text-slate-400">加载中…</p>
+  <p v-else class="text-parchment-100/70">加载中…</p>
 </template>
