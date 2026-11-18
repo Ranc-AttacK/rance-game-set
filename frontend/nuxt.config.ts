@@ -3,6 +3,10 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
+  // SSR 直连后端的内部地址；生产用 NUXT_API_INTERNAL_BASE=http://backend:8080 覆盖。
+  runtimeConfig: {
+    apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || 'http://localhost:8080'
+  },
   // 关闭 Nitro 自带的 OpenAPI 生成（API 文档由后端 springdoc 提供），
   // 同时规避 Nuxt 3.14 + Nitro 2.13 的 std-env/impound 构建问题。
   nitro: {
@@ -24,6 +28,7 @@ export default defineNuxtConfig({
     '/verify-email': { ssr: false },
     '/forgot-password': { ssr: false },
     '/reset-password': { ssr: false },
-    '/me': { ssr: false }
+    '/me': { ssr: false },
+    '/topics/new': { ssr: false }
   }
 })

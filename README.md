@@ -29,11 +29,11 @@ npm install
 npm run dev
 ```
 
-- Web: http://localhost:3000
-- API 通过 Nuxt 同源代理到 `http://localhost:8080/api/v1`
+- Web: http://localhost:3000（端口被占用时用 `npx nuxt dev --port 3001`，并把后端 `APP_BASE_URL` / `APP_ALLOWED_ORIGINS` 设为 `http://localhost:3001`）
+- API 通过 Nuxt 同源代理到 `http://localhost:8080/api/v1`；SSR 页面直连 `NUXT_API_INTERNAL_BASE`（默认 `http://localhost:8080`）
 - 前端依赖后端运行；验证邮件在 Mailpit（http://localhost:8025）
 - 单测：`npm run test:unit`
-- E2E：`npm run test:e2e`（需 docker compose、后端、Mailpit 运行）
+- E2E：`PLAYWRIGHT_BASE_URL=http://localhost:3001 npm run test:e2e`（需 docker compose、后端、Mailpit 运行）
 
 ## 认证接口速查
 
@@ -57,6 +57,37 @@ curl -s -c cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
 curl -s http://localhost:8080/api/v1/users/me \
   -H 'Authorization: Bearer <accessToken>'
 ```
+
+## 论坛接口速查
+
+```bash
+# 分区树（匿名可读，含计数与最后回复）
+curl -s http://localhost:8080/api/v1/categories
+
+# 分区主题流（latest 游标；nextCursor 为 null 表示到底）
+curl -s 'http://localhost:8080/api/v1/categories/general/topics?limit=20'
+curl -s 'http://localhost:8080/api/v1/categories/general/topics?cursor=<nextCursor>'
+
+# 全站最新主题
+curl -s 'http://localhost:8080/api/v1/topics?limit=20'
+
+# 主题详情（楼层分页）
+curl -s 'http://localhost:8080/api/v1/topics/1?page=1&size=20'
+
+# 发主题（需登录 + 邮箱已验证）
+curl -s -X POST http://localhost:8080/api/v1/topics \
+  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' \
+  -d '{"categoryId":1,"title":"主题标题","content":"正文","tags":["讨论"]}'
+
+# 回帖（可带 replyToPostId 引用楼层）
+curl -s -X POST http://localhost:8080/api/v1/topics/1/posts \
+  -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"回复内容"}'
+```
+
+前端页面：`/forum`（分区）、`/forum/:slug`（主题列表）、`/topics/:id`（楼层）、`/topics/new`（发主题，需登录）、`/latest`（全站最新）。
 
 ## 生产部署
 

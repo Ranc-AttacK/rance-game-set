@@ -12,10 +12,16 @@ async function logout() {
 <template>
   <div class="min-h-screen bg-slate-950">
     <header class="border-b border-white/10">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <NuxtLink to="/" class="text-lg font-semibold tracking-wide text-brand-300">
-          GalHub
-        </NuxtLink>
+      <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
+        <div class="flex items-center gap-6">
+          <NuxtLink to="/" class="text-lg font-semibold tracking-wide text-brand-300">
+            GalHub
+          </NuxtLink>
+          <nav class="flex items-center gap-4 text-sm text-slate-300">
+            <NuxtLink to="/forum" class="hover:text-white">论坛</NuxtLink>
+            <NuxtLink to="/latest" class="hover:text-white">最新</NuxtLink>
+          </nav>
+        </div>
         <ClientOnly>
           <nav v-if="auth.isAuthenticated" class="flex items-center gap-3 text-sm">
             <NuxtLink to="/me" class="text-slate-200 hover:text-white">{{ auth.user?.nickname }}</NuxtLink>
