@@ -72,20 +72,20 @@ frontend/
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@pinia/nuxt": "^0.9.0",
-    "axios": "^1.7.7",
-    "nuxt": "^3.14.0",
-    "pinia": "^2.2.6",
-    "vue": "^3.5.12"
+    "@pinia/nuxt": "0.9.0",
+    "axios": "1.7.7",
+    "nuxt": "3.14.0",
+    "pinia": "2.2.6",
+    "vue": "3.5.12"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.12.2",
-    "@playwright/test": "^1.48.2",
-    "@vue/test-utils": "^2.4.6",
-    "happy-dom": "^15.7.4",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.4",
-    "vue-tsc": "^2.1.10"
+    "@nuxtjs/tailwindcss": "6.12.2",
+    "@playwright/test": "1.48.2",
+    "@vue/test-utils": "2.4.6",
+    "happy-dom": "15.7.4",
+    "typescript": "5.6.3",
+    "vitest": "2.1.4",
+    "vue-tsc": "2.1.10"
   }
 }
 ```
