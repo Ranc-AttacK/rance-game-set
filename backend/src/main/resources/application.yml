@@ -56,8 +56,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
-  base-url: ${APP_BASE_URL:http://localhost:5173}
-  allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:5173}
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+  allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:3000}
   jwt:
     private-key: ${JWT_PRIVATE_KEY:}
     public-key: ${JWT_PUBLIC_KEY:}
