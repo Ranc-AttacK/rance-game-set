@@ -8,12 +8,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AppProperties(
         String baseUrl,
         List<String> allowedOrigins,
+        List<String> trustedProxies,
+        String bootstrapAdminEmail,
         Jwt jwt,
         Cookie cookie,
         Email email) {
 
-    public record Jwt(String privateKey, String publicKey, String issuer,
-                      Duration accessTtl, Duration refreshTtl) {
+    public record Jwt(String privateKey, String publicKey,
+                      String privateKeyFile, String publicKeyFile,
+                      String issuer, Duration accessTtl, Duration refreshTtl,
+                      boolean requireConfiguredKeys) {
     }
 
     public record Cookie(boolean secure) {

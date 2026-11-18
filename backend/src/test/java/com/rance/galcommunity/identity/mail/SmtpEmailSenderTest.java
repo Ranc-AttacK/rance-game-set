@@ -20,8 +20,10 @@ class SmtpEmailSenderTest {
         AppProperties props = new AppProperties(
                 "http://localhost:5173",
                 List.of("http://localhost:5173"),
-                new AppProperties.Jwt("", "", "gal-community",
-                        Duration.ofMinutes(30), Duration.ofDays(7)),
+                List.of("127.0.0.1/32"),
+                "",
+                new AppProperties.Jwt("", "", "", "", "gal-community",
+                        Duration.ofMinutes(30), Duration.ofDays(7), false),
                 new AppProperties.Cookie(false),
                 new AppProperties.Email(true, 5000, "no-reply@example.com"));
         SmtpEmailSender sender = new SmtpEmailSender(mailSender, props);

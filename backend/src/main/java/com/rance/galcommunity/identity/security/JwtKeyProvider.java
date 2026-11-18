@@ -1,6 +1,9 @@
 package com.rance.galcommunity.identity.security;
 
 import com.nimbusds.jose.jwk.RSAKey;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -27,20 +30,26 @@ public class JwtKeyProvider {
     public JwtKeyProvider(AppProperties.Jwt props) {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            boolean hasPrivate = props.privateKey() != null && !props.privateKey().isBlank();
-            boolean hasPublic = props.publicKey() != null && !props.publicKey().isBlank();
+            String privateMaterial = readKey(props.privateKey(), props.privateKeyFile(), "private");
+            String publicMaterial = readKey(props.publicKey(), props.publicKeyFile(), "public");
+            boolean hasPrivate = privateMaterial != null && !privateMaterial.isBlank();
+            boolean hasPublic = publicMaterial != null && !publicMaterial.isBlank();
 
             if (!hasPrivate && hasPublic) {
                 throw new IllegalStateException(
                         "Public key configured without private key; token signing requires a private key");
             }
+            if (!hasPrivate && props.requireConfiguredKeys()) {
+                throw new IllegalStateException(
+                        "JWT private key is required in this environment; set JWT_PRIVATE_KEY or JWT_PRIVATE_KEY_FILE");
+            }
 
             if (hasPrivate) {
                 privateKey = (RSAPrivateKey) keyFactory.generatePrivate(
-                        new PKCS8EncodedKeySpec(decodePem(props.privateKey())));
+                        new PKCS8EncodedKeySpec(decodePem(privateMaterial)));
                 if (hasPublic) {
                     publicKey = (RSAPublicKey) keyFactory.generatePublic(
-                            new X509EncodedKeySpec(decodePem(props.publicKey())));
+                            new X509EncodedKeySpec(decodePem(publicMaterial)));
                 } else if (privateKey instanceof RSAPrivateCrtKey crt) {
                     publicKey = (RSAPublicKey) keyFactory.generatePublic(
                             new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent()));
@@ -60,6 +69,8 @@ public class JwtKeyProvider {
                     .encodeToString(MessageDigest.getInstance("SHA-256").digest(publicKey.getEncoded()))
                     .substring(0, 16);
             rsaKey = new RSAKey.Builder(publicKey).privateKey(privateKey).keyID(kid).build();
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize JWT keys", e);
         }
@@ -75,6 +86,20 @@ public class JwtKeyProvider {
 
     public String kid() {
         return kid;
+    }
+
+    private static String readKey(String inline, String file, String kind) {
+        if (inline != null && !inline.isBlank()) {
+            return inline;
+        }
+        if (file == null || file.isBlank()) {
+            return null;
+        }
+        try {
+            return Files.readString(Path.of(file.trim()));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read JWT " + kind + " key file: " + file.trim(), e);
+        }
     }
 
     private static byte[] decodePem(String pem) {

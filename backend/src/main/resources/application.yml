@@ -19,6 +19,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -48,6 +49,8 @@ management:
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
 
 springdoc:
   api-docs:
@@ -58,12 +61,17 @@ springdoc:
 app:
   base-url: ${APP_BASE_URL:http://localhost:3000}
   allowed-origins: ${APP_ALLOWED_ORIGINS:http://localhost:3000}
+  trusted-proxies: "${APP_TRUSTED_PROXIES:127.0.0.1/32,::1/128}"
+  bootstrap-admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
   jwt:
     private-key: ${JWT_PRIVATE_KEY:}
     public-key: ${JWT_PUBLIC_KEY:}
+    private-key-file: ${JWT_PRIVATE_KEY_FILE:}
+    public-key-file: ${JWT_PUBLIC_KEY_FILE:}
     issuer: gal-community
     access-ttl: PT30M
     refresh-ttl: P7D
+    require-configured-keys: ${JWT_REQUIRE_CONFIGURED_KEYS:false}
   cookie:
     secure: ${COOKIE_SECURE:false}
   email:

@@ -1,5 +1,6 @@
 package com.rance.galcommunity.identity.web;
 
+import com.rance.galcommunity.identity.security.AppProperties;
 import com.rance.galcommunity.identity.security.OriginGuard;
 import com.rance.galcommunity.identity.security.RefreshCookie;
 import com.rance.galcommunity.identity.service.AuthService;
@@ -34,11 +35,14 @@ public class AuthController {
     private final AuthService authService;
     private final RefreshCookie refreshCookie;
     private final OriginGuard originGuard;
+    private final AppProperties props;
 
-    public AuthController(AuthService authService, RefreshCookie refreshCookie, OriginGuard originGuard) {
+    public AuthController(AuthService authService, RefreshCookie refreshCookie,
+                          OriginGuard originGuard, AppProperties props) {
         this.authService = authService;
         this.refreshCookie = refreshCookie;
         this.originGuard = originGuard;
+        this.props = props;
     }
 
     @PostMapping("/register")
@@ -46,7 +50,7 @@ public class AuthController {
     public ApiResponse<UserProfileResponse> register(@Valid @RequestBody RegisterRequest request,
                                                      HttpServletRequest httpRequest) {
         return ApiResponse.ok(authService.register(request.email(), request.nickname(),
-                request.password(), ClientIp.of(httpRequest)));
+                request.password(), ClientIp.of(httpRequest, props.trustedProxies())));
     }
 
     @PostMapping("/login")
@@ -54,7 +58,7 @@ public class AuthController {
                                             HttpServletRequest httpRequest,
                                             HttpServletResponse response) {
         AuthService.LoginResult result = authService.login(request.email(), request.password(),
-                ClientIp.of(httpRequest));
+                ClientIp.of(httpRequest, props.trustedProxies()));
         response.addHeader(HttpHeaders.SET_COOKIE,
                 refreshCookie.create(result.refreshToken()).toString());
         return ApiResponse.ok(new LoginResponse(result.access().value(),
@@ -100,7 +104,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
                                             HttpServletRequest httpRequest) {
-        authService.forgotPassword(request.email(), ClientIp.of(httpRequest));
+        authService.forgotPassword(request.email(), ClientIp.of(httpRequest, props.trustedProxies()));
         return ApiResponse.ok();
     }
 

@@ -1,5 +1,6 @@
 package com.rance.galcommunity.identity.repo;
 
+import com.rance.galcommunity.identity.domain.Role;
 import com.rance.galcommunity.identity.domain.UserAccount;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
     Optional<UserAccount> findByEmail(String email);
     boolean existsByEmail(String email);
+    boolean existsByRole(Role role);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from UserAccount u where u.id = :id")
