@@ -34,3 +34,12 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+
+# Deployment secrets and certificates
+deploy/.env
+deploy/secrets/*
+!deploy/secrets/.gitkeep
+deploy/certbot/conf/*
+!deploy/certbot/conf/.gitkeep
+deploy/certbot/www/*
+!deploy/certbot/www/.gitkeep

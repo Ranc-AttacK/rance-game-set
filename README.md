@@ -58,6 +58,11 @@ curl -s http://localhost:8080/api/v1/users/me \
   -H 'Authorization: Bearer <accessToken>'
 ```
 
+## 生产部署
+
+单机 Docker Compose（Nginx + Nuxt + Spring Boot + MySQL/Redis/MinIO，外部 SMTP）：
+见 [deploy/README.md](deploy/README.md)。
+
 ## 测试
 
 ```bash
