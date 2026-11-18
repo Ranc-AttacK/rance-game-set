@@ -21,6 +21,20 @@ mvn -f backend/pom.xml spring-boot:run
 - Mailpit（MailHog 兼容）: http://localhost:8025（SMTP: localhost:1025）
 - MinIO Console: http://localhost:9001（minioadmin/minioadmin）
 
+## 前端开发
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+- Web: http://localhost:3000
+- API 通过 Nuxt 同源代理到 `http://localhost:8080/api/v1`
+- 前端依赖后端运行；验证邮件在 Mailpit（http://localhost:8025）
+- 单测：`npm run test:unit`
+- E2E：`npm run test:e2e`（需 docker compose、后端、Mailpit 运行）
+
 ## 认证接口速查
 
 ```bash
