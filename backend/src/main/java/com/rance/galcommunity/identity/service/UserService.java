@@ -105,6 +105,15 @@ public class UserService implements IdentityApi {
         return Map.copyOf(result);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isEmailVerified(long id) {
+        return users.findById(id)
+                .filter(user -> user.getStatus() == AccountStatus.ACTIVE)
+                .map(UserAccount::isEmailVerified)
+                .orElse(false);
+    }
+
     private UserSummary toSummary(UserAccount user) {
         return new UserSummary(user.getId(), user.getNickname(), user.getAvatarUrl());
     }

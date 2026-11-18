@@ -15,4 +15,7 @@ public interface IdentityApi {
 
     /** Returns ACTIVE summaries keyed by user id; missing/banned/deleted ids are omitted. */
     Map<Long, UserSummary> findUsers(Collection<Long> ids);
+
+    /** True only for an ACTIVE user whose email is verified; missing/banned ids are false. */
+    boolean isEmailVerified(long id);
 }

@@ -76,4 +76,18 @@ class IdentityApiIT extends IntegrationTestBase {
         assertThat(identityApi.findUser(deleted.getId())).isEmpty();
         assertThat(identityApi.findUsers(java.util.List.of(deleted.getId()))).isEmpty();
     }
+
+    @Test
+    void reportsEmailVerificationState() {
+        UserAccount verified = create("verify1@example.com", AccountStatus.ACTIVE);
+        UserAccount unverified = create("verify2@example.com", AccountStatus.ACTIVE);
+        unverified.setEmailVerified(false);
+        users.saveAndFlush(unverified);
+        UserAccount banned = create("verify3@example.com", AccountStatus.BANNED);
+
+        assertThat(identityApi.isEmailVerified(verified.getId())).isTrue();
+        assertThat(identityApi.isEmailVerified(unverified.getId())).isFalse();
+        assertThat(identityApi.isEmailVerified(banned.getId())).isFalse();
+        assertThat(identityApi.isEmailVerified(999999L)).isFalse();
+    }
 }

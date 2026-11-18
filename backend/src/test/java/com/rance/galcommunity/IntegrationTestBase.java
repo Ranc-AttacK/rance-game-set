@@ -63,6 +63,11 @@ public abstract class IntegrationTestBase {
             return null;
         });
         // Later tasks add these tables; the per-statement try/catch keeps Task 1 green before they exist.
+        truncate("community_topic_tags");
+        truncate("community_tags");
+        truncate("community_posts");
+        truncate("community_topics");
+        resetCategoryCounters();
         truncate("event_publication");
         truncate("user_email_outbox");
         truncate("user_password_resets");
@@ -74,6 +79,17 @@ public abstract class IntegrationTestBase {
     private void truncate(String table) {
         try {
             jdbcTemplate.execute("TRUNCATE TABLE " + table);
+        } catch (Exception ignored) {
+            // Table not present yet in this task's schema.
+        }
+    }
+
+    private void resetCategoryCounters() {
+        try {
+            jdbcTemplate.update("""
+                    UPDATE community_categories
+                    SET topic_count = 0, post_count = 0, last_post_id = NULL, last_post_at = NULL
+                    """);
         } catch (Exception ignored) {
             // Table not present yet in this task's schema.
         }

@@ -15,7 +15,7 @@ class ModuleStructureTest {
     @Test
     void detectsExpectedModules() {
         assertThat(MODULES.stream().map(ApplicationModule::getName))
-                .containsExactlyInAnyOrder("shared", "identity");
+                .containsExactlyInAnyOrder("shared", "identity", "community");
     }
 
     @Test
