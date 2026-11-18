@@ -17,6 +17,8 @@ interface AuthState {
   ready: boolean
 }
 
+type BootstrapGlobal = typeof globalThis & { __galAuthBootstrap?: Promise<void> }
+
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
@@ -28,15 +30,24 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async bootstrap() {
       if (this.ready) return
-      this.ready = true
-      const token = await refreshAccessToken()
-      if (!token) return
-      try {
-        await this.fetchMe()
-      } catch {
-        setAccessToken(null)
-        this.user = null
+      const shared = globalThis as BootstrapGlobal
+      if (!shared.__galAuthBootstrap) {
+        shared.__galAuthBootstrap = (async () => {
+          const token = await refreshAccessToken()
+          if (token) {
+            try {
+              await this.fetchMe()
+            } catch {
+              setAccessToken(null)
+              this.user = null
+            }
+          }
+          this.ready = true
+        })().finally(() => {
+          shared.__galAuthBootstrap = undefined
+        })
       }
+      await shared.__galAuthBootstrap
     },
     async login(email: string, password: string) {
       const { data } = await api.post('/auth/login', { email, password })
