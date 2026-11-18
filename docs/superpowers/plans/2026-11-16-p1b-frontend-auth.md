@@ -74,8 +74,8 @@ frontend/
   "dependencies": {
     "@pinia/nuxt": "0.9.0",
     "axios": "1.7.7",
-    "nuxt": "3.14.0",
-    "pinia": "2.2.6",
+    "nuxt": "3.21.11",
+    "pinia": "2.3.0",
     "vue": "3.5.12"
   },
   "devDependencies": {
@@ -99,6 +99,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
+  // 关闭 Nitro 自带的 OpenAPI 生成（API 文档由后端 springdoc 提供），
+  // 同时规避 Nuxt 3.14 + Nitro 2.13 的 std-env/impound 构建问题（Nuxt 已升级到 3.21.11）。
+  nitro: {
+    experimental: { openAPI: false }
+  },
   app: {
     head: {
       title: 'Galgame 社区',
