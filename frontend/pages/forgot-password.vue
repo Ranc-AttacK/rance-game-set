@@ -31,9 +31,9 @@ async function submit() {
       <NuxtLink to="/login" class="btn w-full">返回登录</NuxtLink>
     </div>
     <form v-else class="space-y-4" @submit.prevent="submit">
-      <label class="block text-sm text-parchment-100/80">
+      <label class="block text-sm font-medium text-neutral-700">
         注册邮箱
-        <input v-model="email" type="email" required autocomplete="email" class="input mt-1" placeholder="you@example.com" />
+        <input v-model="email" type="email" required autocomplete="email" class="input mt-1.5" placeholder="you@example.com" />
       </label>
       <Alert v-if="error" type="error" :message="error" />
       <button class="btn w-full" type="submit" :disabled="loading">

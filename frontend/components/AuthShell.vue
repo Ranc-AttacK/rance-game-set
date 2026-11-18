@@ -3,25 +3,20 @@ defineProps<{ title: string; subtitle?: string }>()
 </script>
 
 <template>
-  <section
-    class="mx-auto mt-6 w-full max-w-md overflow-hidden rounded-guild border border-gold-700/40 bg-ink-900/85 shadow-panel"
-  >
-    <!-- 羊皮纸公告抬头 -->
-    <div class="relative border-b border-gold-700/40 bg-gradient-to-b from-parchment-100 to-parchment-300 px-6 py-5 text-ink-950">
-      <span class="rivet left-2.5 top-2.5" aria-hidden="true" />
-      <span class="rivet right-2.5 top-2.5" aria-hidden="true" />
-      <div class="flex items-center gap-3">
-        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold-700/60 bg-ink-950/5 shadow-emboss">
-          <Crest class="h-7 w-7" />
+  <section class="mx-auto mt-4 w-full max-w-2xl">
+    <div class="card overflow-hidden">
+      <div class="border-b border-border px-6 py-5 text-center">
+        <span class="mx-auto grid h-10 w-10 place-items-center rounded-lg bg-accent text-accent-foreground" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+            <path d="M12 2.4l2.1 7.5 7.5 2.1-7.5 2.1L12 21.6l-2.1-7.5L2.4 12l7.5-2.1L12 2.4Z" />
+          </svg>
         </span>
-        <div class="min-w-0">
-          <h1 class="font-display text-xl font-bold tracking-wide">{{ title }}</h1>
-          <p v-if="subtitle" class="mt-0.5 text-xs leading-relaxed text-ink-800/70">{{ subtitle }}</p>
-        </div>
+        <h1 class="mt-3 text-xl font-semibold tracking-tight text-foreground">{{ title }}</h1>
+        <p v-if="subtitle" class="mt-1 text-xs leading-relaxed text-muted">{{ subtitle }}</p>
       </div>
-    </div>
-    <div class="p-6">
-      <slot />
+      <div class="p-6">
+        <slot />
+      </div>
     </div>
   </section>
 </template>

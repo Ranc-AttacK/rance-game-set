@@ -11,6 +11,6 @@ const text = computed(() => {
   <ClientOnly>
     <time v-if="value" :datetime="value">{{ text }}</time>
     <span v-else>—</span>
-    <template #fallback><span class="text-parchment-100/55">—</span></template>
+    <template #fallback><span class="text-muted">—</span></template>
   </ClientOnly>
 </template>

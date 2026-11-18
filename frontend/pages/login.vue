@@ -27,13 +27,13 @@ async function submit() {
 <template>
   <AuthShell title="登录" subtitle="使用邮箱和密码登录你的账号">
     <form class="space-y-4" @submit.prevent="submit">
-      <label class="block text-sm text-parchment-100/80">
+      <label class="block text-sm font-medium text-neutral-700">
         邮箱
-        <input v-model="email" type="email" required autocomplete="email" class="input mt-1" placeholder="you@example.com" />
+        <input v-model="email" type="email" required autocomplete="email" class="input mt-1.5" placeholder="you@example.com" />
       </label>
-      <label class="block text-sm text-parchment-100/80">
+      <label class="block text-sm font-medium text-neutral-700">
         密码
-        <input v-model="password" type="password" required autocomplete="current-password" class="input mt-1" placeholder="至少 8 位，含字母和数字" />
+        <input v-model="password" type="password" required autocomplete="current-password" class="input mt-1.5" placeholder="至少 8 位，含字母和数字" />
       </label>
       <Alert v-if="error" type="error" :message="error" />
       <button class="btn w-full" type="submit" :disabled="loading">
@@ -41,8 +41,8 @@ async function submit() {
       </button>
     </form>
     <div class="mt-4 flex justify-between text-sm">
-      <NuxtLink to="/forgot-password" class="text-parchment-100/70 transition hover:text-gold-100">忘记密码</NuxtLink>
-      <NuxtLink to="/register" class="text-gold-300 transition hover:text-gold-100">注册新账号</NuxtLink>
+      <NuxtLink to="/forgot-password" class="text-muted transition hover:text-foreground">忘记密码</NuxtLink>
+      <NuxtLink to="/register" class="font-medium text-foreground transition hover:text-sakura-600">注册新账号</NuxtLink>
     </div>
   </AuthShell>
 </template>

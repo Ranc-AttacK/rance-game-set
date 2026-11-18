@@ -40,13 +40,13 @@ async function submit() {
       <NuxtLink to="/login" class="btn w-full">去登录</NuxtLink>
     </div>
     <form v-else class="space-y-4" @submit.prevent="submit">
-      <label class="block text-sm text-parchment-100/80">
+      <label class="block text-sm font-medium text-neutral-700">
         新密码
-        <input v-model="password" type="password" required autocomplete="new-password" class="input mt-1" placeholder="8-72 字节，含字母和数字" />
+        <input v-model="password" type="password" required autocomplete="new-password" class="input mt-1.5" placeholder="8-72 字节，含字母和数字" />
       </label>
-      <label class="block text-sm text-parchment-100/80">
+      <label class="block text-sm font-medium text-neutral-700">
         确认新密码
-        <input v-model="confirm" type="password" required autocomplete="new-password" class="input mt-1" />
+        <input v-model="confirm" type="password" required autocomplete="new-password" class="input mt-1.5" />
       </label>
       <Alert v-if="error" type="error" :message="error" />
       <button class="btn w-full" type="submit" :disabled="loading">

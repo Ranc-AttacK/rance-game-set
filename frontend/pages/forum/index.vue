@@ -11,23 +11,19 @@ const categories = computed(() => data.value ?? [])
 </script>
 
 <template>
-  <section class="space-y-6">
-    <header class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p class="kicker">GUILD QUEST BOARD</p>
-        <h1 class="section-title mt-2">论坛</h1>
-        <p class="mt-1.5 text-sm text-parchment-100/70">按分区浏览讨论；登录并验证邮箱后可发帖。</p>
-      </div>
-      <NuxtLink v-if="auth.isAuthenticated" to="/topics/new" class="btn">发主题</NuxtLink>
+  <section class="space-y-8">
+    <header class="flex flex-col items-center gap-2 text-center">
+      <p class="text-[11px] font-medium uppercase tracking-[0.35em] text-muted">COMMUNITY</p>
+      <h1 class="page-title">论坛</h1>
+      <p class="text-sm text-muted">全部分区 · 登录并验证邮箱后可发帖</p>
+      <NuxtLink v-if="auth.isAuthenticated" to="/topics/new" class="btn mt-3">发主题</NuxtLink>
     </header>
 
-    <div class="divider-gold" aria-hidden="true" />
-
-    <p v-if="error" class="rounded-lg border border-wine-500/50 bg-wine-600/15 p-4 text-sm text-wine-100">
+    <p v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
       分区加载失败，请稍后重试。
     </p>
 
-    <div v-else class="space-y-4">
+    <div v-else class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <CategoryCard v-for="category in categories" :key="category.id" :category="category" />
     </div>
   </section>

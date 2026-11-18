@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   html {
@@ -12,82 +12,55 @@
   }
 
   body {
-    @apply min-h-screen font-body text-parchment-100 antialiased;
-    background-color: #070910;
-    /* 公会大厅：酒红灯火 + 古金反光 + 菱形编织纹理 + 极细噪点。
-       全部用 CSS 渐变实现，不依赖任何外链图片。 */
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    /* 米白底上的柔和粉 / 米 / 淡蓝晕染，全部为 CSS 渐变，不依赖外链图片。 */
     background-image:
-      radial-gradient(1200px 620px at 50% -12%, rgba(201, 58, 86, 0.18), transparent 62%),
-      radial-gradient(900px 520px at 100% 0%, rgba(193, 150, 47, 0.1), transparent 58%),
-      radial-gradient(1100px 820px at 0% 108%, rgba(30, 45, 90, 0.34), transparent 62%),
-      repeating-linear-gradient(45deg, rgba(212, 172, 69, 0.028) 0 1px, transparent 1px 24px),
-      repeating-linear-gradient(-45deg, rgba(212, 172, 69, 0.028) 0 1px, transparent 1px 24px),
-      radial-gradient(rgba(255, 255, 255, 0.016) 0.5px, transparent 1px),
-      linear-gradient(180deg, #070910 0%, #0a0d19 46%, #070910 100%);
-    background-size: auto, auto, auto, auto, auto, 3px 3px, auto;
+      radial-gradient(900px 520px at 12% -6%, rgba(249, 216, 227, 0.35), transparent 62%),
+      radial-gradient(760px 480px at 92% 2%, rgba(253, 238, 243, 0.45), transparent 60%),
+      radial-gradient(820px 620px at 86% 92%, rgba(219, 234, 254, 0.22), transparent 64%),
+      radial-gradient(680px 520px at 6% 88%, rgba(254, 243, 199, 0.22), transparent 62%);
+    background-attachment: fixed;
   }
 
   ::selection {
-    background: rgba(201, 58, 86, 0.55);
-    color: #fff;
+    background: #f9d8e3;
+    color: #171717;
   }
 
   :focus-visible {
-    outline: 2px solid #e2c46a;
+    outline: 2px solid #171717;
     outline-offset: 2px;
     border-radius: 6px;
   }
 }
 
 @layer components {
-  /* ---------- 表面 / 卡片 ---------- */
-  .panel {
-    @apply relative rounded-guild border border-gold-700/30 shadow-panel;
-    background-image: linear-gradient(180deg, rgba(21, 26, 43, 0.96), rgba(11, 14, 24, 0.98));
+  /* ---------- 卡片 ---------- */
+  .card {
+    @apply rounded-xl border border-border bg-card shadow-card;
   }
 
-  .panel-soft {
-    @apply rounded-guild border border-gold-700/25;
-    background-image: linear-gradient(180deg, rgba(16, 19, 31, 0.82), rgba(11, 14, 24, 0.9));
-  }
-
-  /* 羊皮纸告示 / 记录纸 */
-  .parchment {
-    @apply rounded-guild border border-gold-700/50 text-ink-950 shadow-panel;
-    background-color: #f3e7cc;
-    background-image:
-      radial-gradient(120% 90% at 50% -20%, rgba(255, 255, 255, 0.6), transparent 60%),
-      repeating-linear-gradient(90deg, rgba(125, 92, 31, 0.06) 0 1px, transparent 1px 18px),
-      repeating-linear-gradient(0deg, rgba(125, 92, 31, 0.05) 0 1px, transparent 1px 20px),
-      linear-gradient(180deg, #f7eeda, #e9d6ac);
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-hover;
   }
 
   /* ---------- 表单控件 ---------- */
   .input {
-    @apply w-full rounded-lg border border-gold-700/35 bg-ink-950/70 px-3 py-2 text-sm text-parchment-50 placeholder:text-parchment-100/50 transition;
+    @apply w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground shadow-card transition placeholder:text-neutral-500;
   }
   .input:hover {
-    border-color: rgba(212, 172, 69, 0.5);
+    @apply border-neutral-300;
   }
   .input:focus {
-    border-color: #e2c46a;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(226, 196, 106, 0.25);
+    @apply border-neutral-400 outline-none ring-2 ring-sakura-200;
   }
 
   /* ---------- 按钮 ---------- */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold tracking-wide text-parchment-50 shadow-emboss transition duration-200;
-    border: 1px solid rgba(226, 196, 106, 0.45);
-    background-image: linear-gradient(180deg, #b3243d 0%, #7a162b 100%);
-  }
-  .btn:hover {
-    background-image: linear-gradient(180deg, #c93a56 0%, #971b33 100%);
-    box-shadow: 0 0 0 1px rgba(226, 196, 106, 0.5), 0 12px 26px -12px rgba(201, 58, 86, 0.65);
-    transform: translateY(-1px);
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-card transition duration-200 hover:bg-neutral-800;
   }
   .btn:active {
-    transform: translateY(0);
+    @apply bg-neutral-900;
   }
   .btn:disabled {
     @apply cursor-not-allowed opacity-50;
@@ -96,106 +69,65 @@
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-gold-700/40 bg-ink-900/45 px-4 py-2 text-sm font-medium text-parchment-100 transition duration-200;
-  }
-  .btn-ghost:hover {
-    border-color: rgba(212, 172, 69, 0.65);
-    background-color: rgba(193, 150, 47, 0.12);
-    color: #f5ebc4;
-    transform: translateY(-1px);
-  }
-  .btn-ghost:active {
-    transform: translateY(0);
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-card transition duration-200 hover:border-neutral-300 hover:bg-neutral-50;
   }
   .btn-ghost:disabled {
     @apply cursor-not-allowed opacity-50;
-    transform: none;
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-wine-200 transition;
-    border: 1px solid rgba(201, 58, 86, 0.55);
-    background-color: rgba(201, 58, 86, 0.08);
-  }
-  .btn-danger:hover {
-    background-color: rgba(201, 58, 86, 0.18);
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100;
   }
 
   /* ---------- 导航 ---------- */
   .nav-link {
-    @apply relative rounded-md px-3 py-1.5 text-sm text-parchment-100/75 transition hover:text-gold-100;
-  }
-  .nav-link:hover {
-    background-color: rgba(193, 150, 47, 0.08);
+    @apply rounded-md px-3 py-1.5 text-sm text-muted transition hover:bg-neutral-100 hover:text-foreground;
   }
   .nav-link.router-link-active,
   .nav-link.router-link-exact-active {
-    color: #ecd998;
-    background-color: rgba(193, 150, 47, 0.1);
-    box-shadow: inset 0 -2px 0 rgba(212, 172, 69, 0.7);
+    @apply bg-neutral-100 font-medium text-foreground;
+  }
+
+  /* 左侧分区菜单项；.active 为黑色胶囊反白 */
+  .menu-link {
+    @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-neutral-100 hover:text-foreground;
+  }
+  .menu-link.active {
+    @apply bg-accent font-medium text-accent-foreground hover:bg-accent hover:text-accent-foreground;
   }
 
   /* ---------- 徽标 / 标签 ---------- */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted transition hover:border-neutral-300 hover:text-foreground;
+  }
+  .chip.active {
+    @apply border-accent bg-accent text-accent-foreground hover:border-accent hover:text-accent-foreground;
+  }
+
   .badge {
-    @apply inline-flex items-center gap-1 rounded-full border border-gold-700/40 bg-gold-500/10 px-2 py-0.5 text-[11px] font-medium text-gold-200;
-  }
-  .badge-wine {
-    @apply inline-flex items-center gap-1 rounded-full border border-wine-500/45 bg-wine-600/15 px-2 py-0.5 text-[11px] font-medium text-wine-200;
-  }
-  .badge-amber {
-    @apply inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-200;
+    @apply inline-flex items-center gap-1 rounded-full border border-border bg-neutral-50 px-2 py-0.5 text-[11px] font-medium text-muted;
   }
 
-  /* ---------- 装饰 ---------- */
-  .divider-gold {
-    height: 1px;
-    background-image: linear-gradient(90deg, transparent, rgba(212, 172, 69, 0.5), transparent);
+  /* ---------- 通用 ---------- */
+  .page-title {
+    @apply text-center text-4xl font-semibold tracking-tight text-foreground sm:text-5xl;
   }
 
-  .kicker {
-    @apply text-[11px] font-semibold uppercase text-gold-400/85;
-    letter-spacing: 0.32em;
-  }
-
-  .section-title {
-    @apply font-display text-2xl font-bold tracking-wide text-parchment-50 sm:text-[28px];
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
-  }
-
-  .medallion {
-    @apply grid place-items-center rounded-full border border-gold-600/50 text-2xl text-gold-100 shadow-emboss;
-    background-image: radial-gradient(circle at 30% 25%, rgba(193, 150, 47, 0.28), rgba(7, 9, 16, 0.9));
-  }
-
-  .floor-plate {
-    @apply inline-flex items-center rounded border border-gold-700/50 px-2 py-0.5 font-mono text-[11px] font-semibold text-gold-200;
-    background-image: linear-gradient(180deg, rgba(193, 150, 47, 0.22), rgba(7, 9, 16, 0.6));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  }
-
-  .rivet {
-    @apply pointer-events-none absolute h-1.5 w-1.5 rounded-full;
-    background: radial-gradient(circle at 35% 30%, #f5ebc4, #7d5c1f 70%, #3f2e15);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  .icon-tile {
+    @apply grid place-items-center rounded-lg bg-neutral-100 text-foreground;
   }
 }
 
 @layer utilities {
-  .text-glow-gold {
-    text-shadow: 0 0 18px rgba(226, 196, 106, 0.32);
-  }
-  .text-glow-wine {
-    text-shadow: 0 0 20px rgba(201, 58, 86, 0.45);
-  }
   .page-enter {
-    animation: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation: fade-up 0.4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
 }
 
 @keyframes fade-up {
   0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;

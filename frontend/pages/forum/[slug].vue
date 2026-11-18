@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import { fetchCategoryTopics, type TopicListItem } from '~/lib/forum'
+import {
+  fetchCategories,
+  fetchCategoryTopics,
+  type CategoryNode,
+  type TopicListItem
+} from '~/lib/forum'
 
 const route = useRoute()
 const auth = useAuthStore()
 const slug = computed(() => String(route.params.slug))
+
+const { data: categories } = await useAsyncData<CategoryNode[]>(
+  'forum-categories',
+  () => fetchCategories()
+)
 
 const { data, error } = await useAsyncData(
   () => `category-topics-${slug.value}`,
@@ -35,30 +45,32 @@ const heading = computed(() => items.value[0]?.categoryName ?? '分区讨论')
 </script>
 
 <template>
-  <section class="space-y-5">
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <p class="kicker">QUEST CATEGORY</p>
-        <h1 class="section-title mt-1.5">{{ heading }}</h1>
-        <NuxtLink to="/forum" class="mt-1.5 inline-block text-sm text-parchment-100/65 transition hover:text-gold-200">
-          ← 返回分区列表
-        </NuxtLink>
-      </div>
-      <NuxtLink v-if="auth.isAuthenticated" to="/topics/new" class="btn">发主题</NuxtLink>
+  <section class="space-y-6">
+    <header class="flex flex-col items-center gap-2 text-center">
+      <p class="text-[11px] font-medium uppercase tracking-[0.35em] text-muted">CATEGORY</p>
+      <h1 class="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{{ heading }}</h1>
+      <NuxtLink to="/forum" class="text-sm text-muted transition hover:text-foreground">
+        返回全部分区
+      </NuxtLink>
+      <NuxtLink v-if="auth.isAuthenticated" to="/topics/new" class="btn mt-2">发主题</NuxtLink>
     </header>
 
-    <div class="divider-gold" aria-hidden="true" />
+    <div class="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <ForumMenu :categories="categories ?? []" :active="slug" />
 
-    <p v-if="error" class="rounded-lg border border-wine-500/50 bg-wine-600/15 p-4 text-sm text-wine-100">
-      主题列表加载失败，请稍后重试。
-    </p>
-    <TopicFeed
-      v-else
-      :items="items"
-      :next-cursor="nextCursor"
-      :loading="loading"
-      empty-text="这里还没有主题，来发第一帖吧。"
-      @load-more="loadMore"
-    />
+      <div class="min-w-0">
+        <p v-if="error" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          主题列表加载失败，请稍后重试。
+        </p>
+        <TopicFeed
+          v-else
+          :items="items"
+          :next-cursor="nextCursor"
+          :loading="loading"
+          empty-text="这里还没有主题，来发第一帖吧。"
+          @load-more="loadMore"
+        />
+      </div>
+    </div>
   </section>
 </template>

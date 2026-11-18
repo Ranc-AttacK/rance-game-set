@@ -41,23 +41,25 @@ const totalPages = computed(() => {
 </script>
 
 <template>
-  <article v-if="topic" class="space-y-6">
-    <header class="panel relative overflow-hidden p-5 sm:p-6">
-      <span class="rivet right-3 top-3" aria-hidden="true" />
-      <div class="flex flex-wrap items-center gap-2 text-xs text-parchment-100/65">
-        <NuxtLink :to="`/forum/${topic.categorySlug}`" class="text-gold-300 transition hover:text-gold-100">
+  <article v-if="topic" class="mx-auto max-w-3xl space-y-5">
+    <header class="card p-5 sm:p-7">
+      <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
+        <NuxtLink
+          :to="`/forum/${topic.categorySlug}`"
+          class="rounded-full border border-border bg-neutral-50 px-2 py-0.5 transition hover:border-neutral-300 hover:text-foreground"
+        >
           {{ topic.categoryName }}
         </NuxtLink>
-        <span v-if="topic.pinned" class="badge-wine">置顶</span>
-        <span v-if="topic.locked" class="badge-amber">已锁定</span>
+        <span v-if="topic.pinned" class="badge">置顶</span>
+        <span v-if="topic.locked" class="badge">已锁定</span>
         <span>{{ topic.viewCount }} 浏览</span>
       </div>
-      <h1 class="mt-3 font-display text-2xl font-bold leading-snug tracking-wide text-parchment-50">{{ topic.title }}</h1>
-      <p class="mt-2 text-sm text-parchment-100/65">
+      <h1 class="mt-3 text-2xl font-semibold leading-snug tracking-tight text-foreground sm:text-3xl">{{ topic.title }}</h1>
+      <p class="mt-2 text-sm text-muted">
         由 {{ topic.author.nickname }} 发布于 <LocalTime :value="topic.createdAt" />
       </p>
-      <ul v-if="topic.tags.length" class="mt-3 flex flex-wrap gap-2">
-        <li v-for="tag in topic.tags" :key="tag.id" class="badge">
+      <ul v-if="topic.tags.length" class="mt-3 flex flex-wrap gap-1.5">
+        <li v-for="tag in topic.tags" :key="tag.id" class="chip px-2 py-0.5 text-[11px]">
           #{{ tag.name }}
         </li>
       </ul>
@@ -75,7 +77,7 @@ const totalPages = computed(() => {
       >
         上一页
       </NuxtLink>
-      <span class="px-3 py-2 text-sm text-parchment-100/65">第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
+      <span class="px-3 py-2 text-sm text-muted">第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
       <NuxtLink
         v-if="page < totalPages"
         :to="`/topics/${topic.id}?page=${page + 1}`"
@@ -85,12 +87,9 @@ const totalPages = computed(() => {
       </NuxtLink>
     </nav>
 
-    <section
-      v-if="auth.isAuthenticated && !topic.locked"
-      class="panel space-y-3 p-5"
-    >
-      <h2 class="font-display text-lg font-semibold text-parchment-50">回复</h2>
-      <p v-if="!auth.user?.emailVerified" class="text-sm text-amber-200">
+    <section v-if="auth.isAuthenticated && !topic.locked" class="card space-y-3 p-5 sm:p-6">
+      <h2 class="text-lg font-semibold text-foreground">回复</h2>
+      <p v-if="!auth.user?.emailVerified" class="text-sm text-amber-700">
         请先验证邮箱后再发言。
       </p>
       <template v-else>
@@ -101,20 +100,21 @@ const totalPages = computed(() => {
           class="input"
           placeholder="写下你的回复…"
         />
-        <p v-if="replyError" class="text-sm text-wine-200">{{ replyError }}</p>
+        <p v-if="replyError" class="text-sm text-red-600">{{ replyError }}</p>
         <button class="btn" type="button" :disabled="submitting" @click="submitReply">
           {{ submitting ? '发送中…' : '发布回复' }}
         </button>
       </template>
     </section>
-    <p v-else-if="!auth.isAuthenticated" class="text-sm text-parchment-100/70">
-      <NuxtLink to="/login" class="text-gold-300 transition hover:text-gold-100">登录</NuxtLink> 后参与讨论。
-    </p>
-    <p v-else class="text-sm text-parchment-100/70">主题已锁定，暂不能回复。</p>
+    <div v-else-if="!auth.isAuthenticated" class="card p-5 text-center text-sm text-muted">
+      <NuxtLink to="/login" class="font-medium text-foreground underline underline-offset-4 hover:text-sakura-600">登录</NuxtLink>
+      后参与讨论。
+    </div>
+    <div v-else class="card p-5 text-center text-sm text-muted">主题已锁定，暂不能回复。</div>
   </article>
 
-  <p v-else-if="error" class="panel-soft p-6 text-parchment-100/70">
+  <p v-else-if="error" class="card p-6 text-sm text-muted">
     主题不存在或已删除。
   </p>
-  <p v-else class="text-parchment-100/70">加载中…</p>
+  <p v-else class="text-sm text-muted">加载中…</p>
 </template>

@@ -56,7 +56,7 @@ onMounted(async () => {
         >
           {{ resending ? '发送中…' : '重新发送验证邮件' }}
         </button>
-        <NuxtLink to="/" class="text-center text-sm text-parchment-100/70 transition hover:text-gold-100">返回首页</NuxtLink>
+        <NuxtLink to="/" class="text-center text-sm text-muted transition hover:text-foreground">返回首页</NuxtLink>
       </div>
     </div>
   </AuthShell>
