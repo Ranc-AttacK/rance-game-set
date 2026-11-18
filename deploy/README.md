@@ -54,7 +54,8 @@ docker compose -f deploy/docker-compose.prod.yml up -d --build
 docker compose -f deploy/docker-compose.prod.yml ps
 ```
 
-- 首次启动 MySQL 后 Flyway 自动建表（V0/V1）。
+- 首次启动 MySQL 后 Flyway 自动建表（V0–V3，含社区分区种子）。
+- Nuxt SSR 通过 `data-net` 之外的 edge-net 直连 `http://backend:8080`（`NUXT_API_INTERNAL_BASE`，compose 已默认配置）。
 - 后端健康检查使用 `/actuator/health/liveness`，就绪后 Nginx 才会启动。
 - 验证：`curl -I https://gal.example.com` 返回 200。
 - 后端镜像默认使用阿里云 Maven 镜像。若服务器在海外，可改用官方源：
