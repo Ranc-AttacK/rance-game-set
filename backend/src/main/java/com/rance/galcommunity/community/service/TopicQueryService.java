@@ -4,9 +4,12 @@ import com.rance.galcommunity.community.domain.Category;
 import com.rance.galcommunity.community.domain.Post;
 import com.rance.galcommunity.community.domain.Tag;
 import com.rance.galcommunity.community.domain.Topic;
+import com.rance.galcommunity.community.domain.TopicFollowId;
 import com.rance.galcommunity.community.repo.CategoryRepository;
 import com.rance.galcommunity.community.repo.PostRepository;
+import com.rance.galcommunity.community.repo.PostVoteRepository;
 import com.rance.galcommunity.community.repo.TagRepository;
+import com.rance.galcommunity.community.repo.TopicFollowRepository;
 import com.rance.galcommunity.community.repo.TopicRepository;
 import com.rance.galcommunity.community.repo.TopicTagRepository;
 import com.rance.galcommunity.community.web.TopicCursor;
@@ -43,16 +46,21 @@ public class TopicQueryService {
     private final CategoryRepository categories;
     private final TagRepository tags;
     private final TopicTagRepository topicTags;
+    private final PostVoteRepository votes;
+    private final TopicFollowRepository follows;
     private final IdentityApi identity;
 
     public TopicQueryService(TopicRepository topics, PostRepository posts,
                              CategoryRepository categories, TagRepository tags,
-                             TopicTagRepository topicTags, IdentityApi identity) {
+                             TopicTagRepository topicTags, PostVoteRepository votes,
+                             TopicFollowRepository follows, IdentityApi identity) {
         this.topics = topics;
         this.posts = posts;
         this.categories = categories;
         this.tags = tags;
         this.topicTags = topicTags;
+        this.votes = votes;
+        this.follows = follows;
         this.identity = identity;
     }
 
@@ -81,6 +89,11 @@ public class TopicQueryService {
 
     @Transactional
     public TopicDetailResponse detail(long id, int page, int size) {
+        return detail(id, page, size, null);
+    }
+
+    @Transactional
+    public TopicDetailResponse detail(long id, int page, int size, Long viewerId) {
         Topic topic = topics.findById(id)
                 .filter(candidate -> "PUBLIC".equals(candidate.getVisibility())
                         && candidate.getDeletedAt() == null)
@@ -94,11 +107,15 @@ public class TopicQueryService {
         authorIds.add(topic.getAuthorId());
         postPage.getContent().forEach(post -> authorIds.add(post.getAuthorId()));
         Map<Long, UserBrief> authors = authors(authorIds);
+        Set<Long> votedPostIds = votedPostIds(viewerId, postPage.getContent());
+        boolean following = viewerId != null
+                && follows.findById(new TopicFollowId(id, viewerId)).isPresent();
 
         List<PostView> postViews = postPage.getContent().stream()
                 .map(post -> new PostView(post.getId(), post.getFloor(), post.getContent(),
                         authors.getOrDefault(post.getAuthorId(), UserBrief.deleted(post.getAuthorId())),
-                        post.getReplyToPostId(), post.getCreatedAt()))
+                        post.getReplyToPostId(), post.getCreatedAt(), post.getUpvoteCount(),
+                        votedPostIds.contains(post.getId())))
                 .toList();
         List<TagView> tagViews = loadTags(id);
         topics.incrementView(id);
@@ -107,6 +124,7 @@ public class TopicQueryService {
                 category != null ? category.getSlug() : "",
                 category != null ? category.getName() : "",
                 topic.isPinned(), topic.isLocked(), topic.getViewCount() + 1,
+                following, topic.getFollowerCount(),
                 authors.getOrDefault(topic.getAuthorId(), UserBrief.deleted(topic.getAuthorId())),
                 topic.getCreatedAt(), tagViews,
                 new PageResponse<>(postViews, postPage.getTotalElements(), pageNumber, pageSize));
@@ -182,6 +200,14 @@ public class TopicQueryService {
                 .filter(Objects::nonNull)
                 .map(tag -> new TagView(tag.getId(), tag.getName(), tag.getSlug()))
                 .toList();
+    }
+
+    private Set<Long> votedPostIds(Long viewerId, List<Post> pagePosts) {
+        if (viewerId == null || pagePosts.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> postIds = pagePosts.stream().map(Post::getId).toList();
+        return Set.copyOf(votes.findVotedPostIds(viewerId, postIds));
     }
 
     private TopicCursor decode(String rawCursor) {

@@ -52,4 +52,24 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     @Modifying
     @Query("update Topic t set t.viewCount = t.viewCount + 1 where t.id = :id")
     void incrementView(@Param("id") long id);
+
+    @Query("""
+            select count(t) from Topic t
+            where t.categoryId = :categoryId and t.visibility = 'PUBLIC' and t.deletedAt is null
+            """)
+    long countVisibleInCategory(@Param("categoryId") long categoryId);
+
+    @Query("""
+            select coalesce(sum(t.postCount), 0) from Topic t
+            where t.categoryId = :categoryId and t.visibility = 'PUBLIC' and t.deletedAt is null
+            """)
+    long sumVisiblePostCount(@Param("categoryId") long categoryId);
+
+    @Query("""
+            select t from Topic t
+            where t.categoryId = :categoryId and t.visibility = 'PUBLIC' and t.deletedAt is null
+              and t.lastPostAt is not null
+            order by t.lastPostAt desc, t.id desc
+            """)
+    List<Topic> findLastVisibleInCategory(@Param("categoryId") long categoryId, Pageable pageable);
 }

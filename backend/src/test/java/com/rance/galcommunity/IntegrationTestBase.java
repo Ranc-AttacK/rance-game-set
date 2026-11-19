@@ -63,6 +63,10 @@ public abstract class IntegrationTestBase {
             return null;
         });
         // Later tasks add these tables; the per-statement try/catch keeps Task 1 green before they exist.
+        truncate("user_notifications");
+        truncate("community_topic_follows");
+        truncate("community_post_votes");
+        truncate("community_user_stats");
         truncate("community_topic_tags");
         truncate("community_tags");
         truncate("community_posts");

@@ -21,4 +21,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findVisiblePage(@Param("topicId") long topicId, Pageable pageable);
 
     List<Post> findByIdIn(Collection<Long> ids);
+
+    @Query("""
+            select count(p) from Post p
+            where p.topicId = :topicId and p.visibility = 'PUBLIC' and p.deletedAt is null
+            """)
+    long countVisible(@Param("topicId") long topicId);
+
+    @Query("""
+            select p from Post p
+            where p.topicId = :topicId and p.visibility = 'PUBLIC' and p.deletedAt is null
+            order by p.floor desc
+            """)
+    List<Post> findLastVisible(@Param("topicId") long topicId, Pageable pageable);
 }

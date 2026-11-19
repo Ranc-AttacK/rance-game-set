@@ -54,6 +54,9 @@ public class Topic {
     @Column(name = "view_count", nullable = false)
     private long viewCount;
 
+    @Column(name = "follower_count", nullable = false)
+    private int followerCount;
+
     @Column(name = "last_post_id")
     private Long lastPostId;
 

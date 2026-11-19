@@ -48,6 +48,9 @@ public class Post {
     @Column(name = "edit_count", nullable = false)
     private int editCount;
 
+    @Column(name = "upvote_count", nullable = false)
+    private int upvoteCount;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

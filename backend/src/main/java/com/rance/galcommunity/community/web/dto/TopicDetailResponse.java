@@ -6,6 +6,7 @@ import java.util.List;
 
 public record TopicDetailResponse(long id, String title, String categorySlug, String categoryName,
                                   boolean pinned, boolean locked, long viewCount,
+                                  boolean following, int followerCount,
                                   UserBrief author, Instant createdAt,
                                   List<TagView> tags, PageResponse<PostView> posts) {
 
