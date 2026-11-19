@@ -63,6 +63,8 @@ export interface PostView {
   author: UserBrief
   replyToPostId: number | null
   createdAt: string
+  upvoteCount: number
+  upvoted: boolean
 }
 
 export interface PageData<T> {
@@ -80,10 +82,35 @@ export interface TopicDetail {
   pinned: boolean
   locked: boolean
   viewCount: number
+  following: boolean
+  followerCount: number
   author: UserBrief
   createdAt: string
   tags: TagView[]
   posts: PageData<PostView>
+}
+
+export interface NotificationView {
+  id: number
+  type: string
+  actorId: number
+  actorNickname: string
+  actorAvatarUrl: string | null
+  topicId: number | null
+  topicTitle: string | null
+  postId: number | null
+  read: boolean
+  createdAt: string
+}
+
+export interface VoteResult {
+  upvoted: boolean
+  upvoteCount: number
+}
+
+export interface FollowResult {
+  following: boolean
+  followerCount: number
 }
 
 interface Envelope<T> {
@@ -142,4 +169,59 @@ export async function replyToTopic(
 ): Promise<PostView> {
   const response = await api.post(`/topics/${topicId}/posts`, payload)
   return response.data.data as PostView
+}
+
+export async function fetchTopicAuthed(id: number, page = 1): Promise<TopicDetail> {
+  const response = await api.get(`/topics/${id}`, { params: { page } })
+  return response.data.data as TopicDetail
+}
+
+export async function setPostUpvote(postId: number, upvote: boolean): Promise<VoteResult> {
+  const response = upvote
+    ? await api.post(`/posts/${postId}/upvote`)
+    : await api.delete(`/posts/${postId}/upvote`)
+  return response.data.data as VoteResult
+}
+
+export async function setTopicFollow(topicId: number, follow: boolean): Promise<FollowResult> {
+  const response = follow
+    ? await api.post(`/topics/${topicId}/follow`)
+    : await api.delete(`/topics/${topicId}/follow`)
+  return response.data.data as FollowResult
+}
+
+export async function updatePost(postId: number, content: string): Promise<PostView> {
+  const response = await api.patch(`/posts/${postId}`, { content })
+  return response.data.data as PostView
+}
+
+export async function removePost(postId: number): Promise<void> {
+  await api.delete(`/posts/${postId}`)
+}
+
+export async function updateTopic(topicId: number, title: string): Promise<TopicDetail> {
+  const response = await api.patch(`/topics/${topicId}`, { title })
+  return response.data.data as TopicDetail
+}
+
+export async function removeTopic(topicId: number): Promise<void> {
+  await api.delete(`/topics/${topicId}`)
+}
+
+export async function fetchNotifications(page = 1): Promise<PageData<NotificationView>> {
+  const response = await api.get('/notifications', { params: { page } })
+  return response.data.data as PageData<NotificationView>
+}
+
+export async function fetchUnreadCount(): Promise<number> {
+  const response = await api.get('/notifications/unread-count')
+  return Number(response.data.data.count ?? 0)
+}
+
+export async function markNotificationRead(id: number): Promise<void> {
+  await api.post(`/notifications/${id}/read`)
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await api.post('/notifications/read-all')
 }

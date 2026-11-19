@@ -1,13 +1,41 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
+import { fetchUnreadCount } from '~/lib/forum'
 
 const auth = useAuthStore()
 const route = useRoute()
 const menuOpen = ref(false)
+const unread = ref(0)
+let unreadTimer: ReturnType<typeof setInterval> | null = null
 
 watch(() => route.fullPath, () => {
   menuOpen.value = false
 })
+
+watch(() => auth.isAuthenticated, () => {
+  void loadUnread()
+})
+
+onMounted(() => {
+  void loadUnread()
+  unreadTimer = setInterval(() => void loadUnread(), 60_000)
+})
+
+onBeforeUnmount(() => {
+  if (unreadTimer) clearInterval(unreadTimer)
+})
+
+async function loadUnread() {
+  if (!auth.isAuthenticated) {
+    unread.value = 0
+    return
+  }
+  try {
+    unread.value = await fetchUnreadCount()
+  } catch {
+    unread.value = 0
+  }
+}
 
 async function logout() {
   await auth.logout()
@@ -40,6 +68,18 @@ async function logout() {
         <div class="flex items-center gap-2">
           <ClientOnly>
             <nav v-if="auth.isAuthenticated" class="hidden items-center gap-1 sm:flex" aria-label="账号">
+              <NuxtLink to="/notifications" class="relative grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-neutral-100 hover:text-foreground" aria-label="通知">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                </svg>
+                <span
+                  v-if="unread > 0"
+                  class="absolute right-1 top-1 min-w-[16px] rounded-full bg-sakura-500 px-1 text-center text-[10px] font-semibold leading-4 text-white"
+                >
+                  {{ unread > 99 ? '99+' : unread }}
+                </span>
+              </NuxtLink>
               <NuxtLink to="/me" class="nav-link max-w-[12rem] truncate">{{ auth.user?.nickname }}</NuxtLink>
               <button class="btn-ghost px-3 py-1.5" type="button" @click="logout">退出</button>
             </nav>
@@ -76,7 +116,10 @@ async function logout() {
             <NuxtLink to="/latest" class="menu-link">最新</NuxtLink>
             <ClientOnly>
               <template v-if="auth.isAuthenticated">
-                <NuxtLink to="/me" class="menu-link mt-1 truncate">{{ auth.user?.nickname }}</NuxtLink>
+                <NuxtLink to="/notifications" class="menu-link mt-1">
+                  通知<span v-if="unread > 0" class="ml-1 text-sakura-600">({{ unread }})</span>
+                </NuxtLink>
+                <NuxtLink to="/me" class="menu-link truncate">{{ auth.user?.nickname }}</NuxtLink>
                 <button class="btn-ghost mt-2 w-full" type="button" @click="logout">退出登录</button>
               </template>
               <template v-else>

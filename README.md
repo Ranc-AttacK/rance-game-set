@@ -85,9 +85,30 @@ curl -s -X POST http://localhost:8080/api/v1/topics/1/posts \
   -H 'Authorization: Bearer <accessToken>' \
   -H 'Content-Type: application/json' \
   -d '{"content":"回复内容"}'
+
+# 点赞 / 取消点赞（禁止自赞）
+curl -s -X POST http://localhost:8080/api/v1/posts/1/upvote -H 'Authorization: Bearer <accessToken>'
+curl -s -X DELETE http://localhost:8080/api/v1/posts/1/upvote -H 'Authorization: Bearer <accessToken>'
+
+# 关注 / 取消关注主题
+curl -s -X POST http://localhost:8080/api/v1/topics/1/follow -H 'Authorization: Bearer <accessToken>'
+curl -s -X DELETE http://localhost:8080/api/v1/topics/1/follow -H 'Authorization: Bearer <accessToken>'
+
+# 编辑 / 删除自己的楼层与主题
+curl -s -X PATCH http://localhost:8080/api/v1/posts/1 -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' -d '{"content":"修改后的正文"}'
+curl -s -X PATCH http://localhost:8080/api/v1/topics/1 -H 'Authorization: Bearer <accessToken>' \
+  -H 'Content-Type: application/json' -d '{"title":"修改后的标题"}'
+curl -s -X DELETE http://localhost:8080/api/v1/posts/1 -H 'Authorization: Bearer <accessToken>'
+curl -s -X DELETE http://localhost:8080/api/v1/topics/1 -H 'Authorization: Bearer <accessToken>'
+
+# 通知：列表 / 未读数 / 已读
+curl -s 'http://localhost:8080/api/v1/notifications?page=1' -H 'Authorization: Bearer <accessToken>'
+curl -s http://localhost:8080/api/v1/notifications/unread-count -H 'Authorization: Bearer <accessToken>'
+curl -s -X POST http://localhost:8080/api/v1/notifications/read-all -H 'Authorization: Bearer <accessToken>'
 ```
 
-前端页面：`/forum`（分区）、`/forum/:slug`（主题列表）、`/topics/:id`（楼层）、`/topics/new`（发主题，需登录）、`/latest`（全站最新）。
+前端页面：`/forum`（分区）、`/forum/:slug`（主题列表）、`/topics/:id`（楼层、点赞/关注/编辑删除）、`/topics/new`（发主题，需登录）、`/latest`（全站最新）、`/notifications`（通知中心，需登录）。
 
 ## 生产部署
 

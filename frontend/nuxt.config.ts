@@ -29,6 +29,7 @@ export default defineNuxtConfig({
     '/forgot-password': { ssr: false },
     '/reset-password': { ssr: false },
     '/me': { ssr: false },
-    '/topics/new': { ssr: false }
+    '/topics/new': { ssr: false },
+    '/notifications': { ssr: false }
   }
 })
