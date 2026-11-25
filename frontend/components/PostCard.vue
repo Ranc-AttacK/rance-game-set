@@ -29,7 +29,7 @@ const isOwn = computed(() => props.currentUserId !== null && props.currentUserId
       </span>
     </header>
     <div class="my-3 h-px bg-border" aria-hidden="true" />
-    <p class="whitespace-pre-wrap break-words text-[15px] leading-7 text-neutral-800">{{ post.content }}</p>
+    <PostContent :content="post.content" />
 
     <footer class="mt-3 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs">
       <button

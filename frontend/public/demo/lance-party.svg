@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="队伍编成与属性面板示意图">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2436"/>
+      <stop offset="0.6" stop-color="#232c44"/>
+      <stop offset="1" stop-color="#3a2b45"/>
+    </linearGradient>
+    <linearGradient id="hp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f08fa6"/>
+      <stop offset="1" stop-color="#e0557c"/>
+    </linearGradient>
+    <linearGradient id="mp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9fc4f0"/>
+      <stop offset="1" stop-color="#5f8ed6"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <circle cx="140" cy="80" r="180" fill="#ffffff" opacity="0.04"/>
+  <circle cx="880" cy="500" r="220" fill="#ffffff" opacity="0.04"/>
+
+  <text x="52" y="62" font-family="'Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" letter-spacing="4" fill="#8fa0c4">PARTY STATUS</text>
+  <text x="52" y="100" font-family="'Noto Sans SC','Microsoft YaHei',sans-serif" font-size="26" font-weight="700" fill="#f4f1ea">最终决战前 · 队伍编成</text>
+
+  <g font-family="'Noto Sans SC',sans-serif">
+    <rect x="52" y="140" width="270" height="320" rx="20" fill="#ffffff" opacity="0.07" stroke="#ffffff" stroke-opacity="0.12"/>
+    <circle cx="98" cy="196" r="26" fill="#e0557c"/>
+    <text x="98" y="204" text-anchor="middle" font-size="20" font-weight="700" fill="#ffffff">兰</text>
+    <text x="140" y="190" font-size="17" font-weight="700" fill="#f4f1ea">兰斯</text>
+    <text x="140" y="212" font-size="12" fill="#9fb0d0">Lv.62 · 剑士</text>
+    <text x="76" y="264" font-size="11" fill="#8fa0c4">HP</text>
+    <rect x="108" y="254" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="108" y="254" width="152" height="12" rx="6" fill="url(#hp)"/>
+    <text x="76" y="300" font-size="11" fill="#8fa0c4">MP</text>
+    <rect x="108" y="290" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="108" y="290" width="96" height="12" rx="6" fill="url(#mp)"/>
+    <text x="76" y="344" font-size="12" fill="#c9d2e6">装备：魔剑卡奥斯</text>
+    <text x="76" y="372" font-size="12" fill="#c9d2e6">技能：兰斯斩 / 连击</text>
+    <rect x="76" y="400" width="222" height="34" rx="10" fill="#e0557c" opacity="0.9"/>
+    <text x="187" y="422" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">设为队长</text>
+
+    <rect x="344" y="140" width="270" height="320" rx="20" fill="#ffffff" opacity="0.07" stroke="#ffffff" stroke-opacity="0.12"/>
+    <circle cx="390" cy="196" r="26" fill="#7aa8e0"/>
+    <text x="390" y="204" text-anchor="middle" font-size="20" font-weight="700" fill="#ffffff">希</text>
+    <text x="432" y="190" font-size="17" font-weight="700" fill="#f4f1ea">希露</text>
+    <text x="432" y="212" font-size="12" fill="#9fb0d0">Lv.58 · 治疗</text>
+    <text x="368" y="264" font-size="11" fill="#8fa0c4">HP</text>
+    <rect x="400" y="254" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="400" y="254" width="132" height="12" rx="6" fill="url(#hp)"/>
+    <text x="368" y="300" font-size="11" fill="#8fa0c4">MP</text>
+    <rect x="400" y="290" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="400" y="290" width="164" height="12" rx="6" fill="url(#mp)"/>
+    <text x="368" y="344" font-size="12" fill="#c9d2e6">装备：回复杖</text>
+    <text x="368" y="372" font-size="12" fill="#c9d2e6">技能：全体治愈 / 护盾</text>
+    <rect x="368" y="400" width="222" height="34" rx="10" fill="#ffffff" opacity="0.12"/>
+    <text x="479" y="422" text-anchor="middle" font-size="13" font-weight="700" fill="#f4f1ea">查看详情</text>
+
+    <rect x="636" y="140" width="270" height="320" rx="20" fill="#ffffff" opacity="0.07" stroke="#ffffff" stroke-opacity="0.12"/>
+    <circle cx="682" cy="196" r="26" fill="#c9a86a"/>
+    <text x="682" y="204" text-anchor="middle" font-size="20" font-weight="700" fill="#ffffff">雅</text>
+    <text x="724" y="190" font-size="17" font-weight="700" fill="#f4f1ea">雅典娜</text>
+    <text x="724" y="212" font-size="12" fill="#9fb0d0">Lv.60 · 法师</text>
+    <text x="660" y="264" font-size="11" fill="#8fa0c4">HP</text>
+    <rect x="692" y="254" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="692" y="254" width="118" height="12" rx="6" fill="url(#hp)"/>
+    <text x="660" y="300" font-size="11" fill="#8fa0c4">MP</text>
+    <rect x="692" y="290" width="184" height="12" rx="6" fill="#ffffff" opacity="0.1"/>
+    <rect x="692" y="290" width="176" height="12" rx="6" fill="url(#mp)"/>
+    <text x="660" y="344" font-size="12" fill="#c9d2e6">装备：咏叹法杖</text>
+    <text x="660" y="372" font-size="12" fill="#c9d2e6">技能：陨石 / 冰封</text>
+    <rect x="660" y="400" width="222" height="34" rx="10" fill="#ffffff" opacity="0.12"/>
+    <text x="771" y="422" text-anchor="middle" font-size="13" font-weight="700" fill="#f4f1ea">查看详情</text>
+  </g>
+</svg>

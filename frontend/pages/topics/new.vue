@@ -100,6 +100,7 @@ async function submit() {
         正文
         <textarea v-model="content" rows="12" maxlength="20000" class="input mt-1.5" placeholder="正文（纯文本，保留换行）" />
       </label>
+      <p class="!mt-1 text-xs text-muted">支持图片语法：![说明](https://example.com/a.png)，其余内容按纯文本展示。</p>
       <label class="block text-sm font-medium text-neutral-700">
         标签
         <input v-model="tagsInput" class="input mt-1.5" placeholder="标签，用逗号或空格分隔，例如：汉化, 补丁" />

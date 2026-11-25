@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="最终决战战斗界面示意图">
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141827"/>
+      <stop offset="0.6" stop-color="#2a2140"/>
+      <stop offset="1" stop-color="#4a2438"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f08fa6" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#f08fa6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="enemyHp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2b8a2"/>
+      <stop offset="1" stop-color="#dd5f5f"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#field)"/>
+  <circle cx="700" cy="210" r="190" fill="url(#aura)"/>
+  <path d="M0 420 L960 360 L960 540 L0 540 Z" fill="#0d101b" opacity="0.55"/>
+
+  <g opacity="0.9">
+    <path d="M640 380 C 620 300 650 240 700 220 C 760 240 780 320 760 380 Z" fill="#231a2e" stroke="#f08fa6" stroke-opacity="0.35" stroke-width="2"/>
+    <path d="M680 250 C 690 220 710 220 720 250" fill="none" stroke="#f08fa6" stroke-opacity="0.6" stroke-width="3"/>
+    <circle cx="688" cy="278" r="5" fill="#f08fa6"/>
+    <circle cx="722" cy="278" r="5" fill="#f08fa6"/>
+  </g>
+
+  <text x="52" y="60" font-family="'Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" letter-spacing="4" fill="#8a93b0">FINAL BATTLE</text>
+  <text x="52" y="96" font-family="'Noto Sans SC','Microsoft YaHei',sans-serif" font-size="26" font-weight="700" fill="#f4f1ea">最终决战 · 第 3 阶段</text>
+
+  <g font-family="'Noto Sans SC',sans-serif">
+    <rect x="52" y="130" width="500" height="74" rx="16" fill="#0b0e18" opacity="0.72" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="76" y="160" font-size="15" font-weight="700" fill="#f4f1ea">魔王 · 阶段三</text>
+    <text x="76" y="184" font-size="11" fill="#8a93b0">HP</text>
+    <rect x="104" y="174" width="420" height="14" rx="7" fill="#ffffff" opacity="0.1"/>
+    <rect x="104" y="174" width="238" height="14" rx="7" fill="url(#enemyHp)"/>
+    <text x="530" y="186" text-anchor="end" font-size="11" fill="#c9d2e6">43%</text>
+
+    <rect x="52" y="232" width="330" height="130" rx="16" fill="#0b0e18" opacity="0.72" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="76" y="262" font-size="13" font-weight="700" fill="#f4f1ea">兰斯</text>
+    <text x="76" y="286" font-size="11" fill="#8a93b0">HP 1420 / 1620</text>
+    <rect x="76" y="296" width="282" height="10" rx="5" fill="#ffffff" opacity="0.1"/>
+    <rect x="76" y="296" width="248" height="10" rx="5" fill="#e0557c"/>
+    <text x="76" y="326" font-size="11" fill="#8a93b0">状态：攻击强化 · 连击准备</text>
+    <text x="76" y="348" font-size="11" fill="#8a93b0">回合：12</text>
+
+    <rect x="52" y="392" width="856" height="112" rx="18" fill="#0b0e18" opacity="0.8" stroke="#ffffff" stroke-opacity="0.08"/>
+    <g fill="#f4f1ea" font-size="14" font-weight="700">
+      <rect x="76" y="416" width="180" height="64" rx="12" fill="#e0557c"/>
+      <text x="166" y="454" text-anchor="middle">兰斯斩</text>
+      <rect x="276" y="416" width="180" height="64" rx="12" fill="#ffffff" opacity="0.1"/>
+      <text x="366" y="454" text-anchor="middle">全体治愈</text>
+      <rect x="476" y="416" width="180" height="64" rx="12" fill="#ffffff" opacity="0.1"/>
+      <text x="566" y="454" text-anchor="middle">陨石术</text>
+      <rect x="676" y="416" width="208" height="64" rx="12" fill="#ffffff" opacity="0.1"/>
+      <text x="780" y="454" text-anchor="middle">防御 / 道具</text>
+    </g>
+  </g>
+</svg>
